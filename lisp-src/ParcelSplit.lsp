@@ -46,6 +46,11 @@
     ((wcmatch res-jibeon "*-") (setq res-jibeon (substr res-jibeon 1 (- (strlen res-jibeon) 1))))
   )
   
+  ;; 임야대장(2)인 경우 지번 앞에 "산" 다시 붙이기
+  (if (= res-reg "2")
+    (setq res-jibeon (strcat "산" res-jibeon))
+  )
+  
   (list res-jibeon res-jimok res-reg)
 )
 
