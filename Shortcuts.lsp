@@ -34,6 +34,7 @@
 (defun C:AFO2 () (util:lazy-load "AreaAdjust.lsp" 'c:AREA_ADJUST_FIXED))
 
 ;; 4. 유틸리티 관련
+(defun C:PS  () (util:lazy-load "ParcelSplit.lsp" 'c:PARCEL_SPLIT))
 (defun C:INC () (util:lazy-load "IncrementNumber.lsp" 'c:INCREMENTNUMBER))
 (defun C:OB  () (util:lazy-load "OuterBoundary.lsp" 'c:OUTERBOUNDARY))
 
@@ -41,7 +42,7 @@
 (defun C:APPHELP ()
   (princ "\n============================================")
   (princ "\n [CAD 3rd Party Tools] ")
-  (princ "\n - Version: 1.0.0 (2026-04-26)")
+  (princ "\n - Version: 1.1.0 (2026-04-26)")
   (princ "\n - Developer: LX Kim Byoung-woo")
   (princ "\n============================================")
   (princ "\n  F2P  : REFPOLY_CW - 시계 방향(CW) 구간 교체")
@@ -49,6 +50,7 @@
   (princ "\n  ODL  : ODLABEL - OD 데이터 레이블 생성")
   (princ "\n  AFO  : AREA_ADJUST - 면적 정밀 조정 (구간 이동)")
   (princ "\n  AFO2 : AREA_ADJUST_FIXED - 면적 정밀 조정 (고정점 유지)")
+  (princ "\n  PS   : PARCEL_SPLIT - 지번 레이어 분해 및 분리")
   (princ "\n  INC  : INCREMENTNUMBER - 숫자 자동 증가 입력")
   (princ "\n  OB   : OUTERBOUNDARY - 외곽선 추출")
   (princ "\n--------------------------------------------")
