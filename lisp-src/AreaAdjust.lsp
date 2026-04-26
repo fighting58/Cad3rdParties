@@ -224,5 +224,5 @@
 ;; 명령어 2: 고정점 방식
 (defun C:AREA_ADJUST_FIXED () (fn:area-adjust-main "고정점 유지" 'fn:adjust-area-fixed))
 
-(princ "\n면적 정밀 조정 도구(통합) 로드 완료. 명령어: AREA_ADJUST, AREA_ADJUST_FIXED")
+(princ "\n면적 정밀 조정 도구(통합) 로드 완료.")
 (princ)

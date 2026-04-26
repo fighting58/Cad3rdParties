@@ -168,5 +168,5 @@
 (defun C:WD500 () (fn:create-map-index 500))
 (defun C:WD1000 () (fn:create-map-index 1000))
 
-(princ "\n도곽 생성 도구 로드 완료 (WD500, WD1000)")
+(princ "\n도곽 생성 도구 로드 완료.")
 (princ)

@@ -67,5 +67,5 @@
   )
 )
 
-(princ "\n외곽선 추출 도구 로드 완료. 명령어: 'OUTERBOUND'")
+(princ "\n외곽선 추출 도구 로드 완료.")
 (princ)

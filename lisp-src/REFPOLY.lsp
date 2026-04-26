@@ -192,5 +192,5 @@
   (fn:refpoly-engine "혼합(기준CCW, 대상CW)" 'util:ensure-counter-clockwise 'util:ensure-clockwise)
 )
 
-(princ "\n통합 REFPOLY 도구 로드 완료. (명령어: REFPOLY_CW, REFPOLY_CCW)")
+(princ "\n통합 REFPOLY 도구 로드 완료.")
 (princ)
