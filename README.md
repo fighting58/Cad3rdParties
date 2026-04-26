@@ -32,6 +32,6 @@ AutoCAD Map 3D 2013 최적화 리습 도구 모음
 - **OB**: 외곽선 추출
 
 ## 정보
-- **Version**: 1.2.0
+- **Version**: 1.2.1
 - **Developer**: LX Kim Byoung-woo
 - **Release Date**: 2026-04-26

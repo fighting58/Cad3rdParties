@@ -1,5 +1,5 @@
 ;;; ParcelSplit.lsp
-;;; 지번 레이어(19)를 구성 요소별로 분해하여 10, 11, 21 레이어로 분리 생성
+;;; 지번 레이어(19)를 구성 요소별로 분해하여 10, 11, 20 레이어로 분리 생성
 ;;; AutoCAD 2013 & Windows 11 환경 최적화
 
 (vl-load-com)
@@ -22,7 +22,7 @@
 (defun fn:parse-parcel-string (str / res-reg res-jimok res-jibeon last-char)
   (setq str (vl-string-trim " " str))
   
-  ;; 1. 대장 구분 (21 레이어용)
+  ;; 1. 대장 구분 (20 레이어용)
   (if (wcmatch str "산*")
     (setq res-reg "2" str (vl-string-left-trim "산" str))
     (setq res-reg "1")
@@ -74,7 +74,7 @@
   
   (util:ensure-layer "10" 4) ; Cyan
   (util:ensure-layer "11" 4) ; Cyan
-  (util:ensure-layer "21" 3) ; Green
+  (util:ensure-layer "20" 3) ; Green
 
   ;; 2. 객체 선택
   (princ (strcat "\n'" lay-in "' 레이어의 지번 문자들을 처리 중..."))
@@ -98,7 +98,7 @@
           p-reg     (nth 2 str-data))
     
     ;; 새로운 문자 객체 생성 (동일 위치/속성 복제)
-    (foreach item (list (list "10" p-jibeon) (list "11" p-jimok) (list "21" p-reg))
+    (foreach item (list (list "10" p-jibeon) (list "11" p-jimok) (list "20" p-reg))
       (if (and (cadr item) (/= (cadr item) ""))
         (progn
           (setq new-obj (vla-copy obj))

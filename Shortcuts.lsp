@@ -44,7 +44,7 @@
 (defun C:APPHELP ()
   (princ "\n============================================")
   (princ "\n [CAD 3rd Party Tools] ")
-  (princ "\n - Version: 1.2.0 (2026-04-26)")
+  (princ "\n - Version: 1.2.1 (2026-04-26)")
   (princ "\n - Developer: LX Kim Byoung-woo")
   (princ "\n============================================")
   (princ "\n  F2P  - REFPOLY_CW - 시계 방향(CW) 구간 교체")
