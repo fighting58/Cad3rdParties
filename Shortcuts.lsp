@@ -1,13 +1,13 @@
 ;;; Shortcuts.lsp
-;;; Áö¿¬ ·Îµù(Lazy Loading) ¹æ½ÄÀÇ ´ÜÃà ¸í·É¾î ¼³Á¤
+;;; ì§€ì—° ë¡œë”©(Lazy Loading) ë°©ì‹ì˜ ë‹¨ì¶• ëª…ë ¹ì–´ ì„¤ì •
 
 (vl-load-com)
 
 ;; ==========================================
-;; [1] Áö¿¬ ·Îµù À¯Æ¿¸®Æ¼ (util:)
+;; [1] ì§€ì—° ë¡œë”© ìœ í‹¸ë¦¬í‹° (util:)
 ;; ==========================================
 
-;; ¸í·É¾î È£Ãâ ½ÃÁ¡¿¡ ´ë»ó ÆÄÀÏÀ» ·ÎµåÇÏ°í, ½ÇÁ¦ ¸í·ÉÀ» ½ÇÇà
+;; ëª…ë ¹ì–´ í˜¸ì¶œ ì‹œì ì— ëŒ€ìƒ íŒŒì¼ì„ ë¡œë“œí•˜ê³ , ì‹¤ì œ ëª…ë ¹ì„ ì‹¤í–‰
 (defun util:lazy-load (file-name cmd-sym / full-path)
   (setq full-path (findfile file-name))
   (if (not full-path) (setq full-path (findfile (strcat "lisp-src/" file-name))))
@@ -15,19 +15,19 @@
   (if (not (eval cmd-sym))
     (if full-path
       (load full-path)
-      (princ (strcat "\n¿À·ù: '" file-name "' ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù."))
+      (princ (strcat "\nì˜¤ë¥˜: '" file-name "' íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤."))
     )
   )
 
   (if (eval cmd-sym)
     (apply (eval cmd-sym) nil)
-    (princ (strcat "\n¿À·ù: '" (vl-princ-to-string cmd-sym) "' ¸í·É¾î¸¦ ½ÇÇàÇÒ ¼ö ¾ø½À´Ï´Ù."))
+    (princ (strcat "\nì˜¤ë¥˜: '" (vl-princ-to-string cmd-sym) "' ëª…ë ¹ì–´ë¥¼ ì‹¤í–‰í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤."))
   )
   (princ)
 )
 
 ;; ==========================================
-;; [2] ¸í·É¾î ´ÜÃàÅ° Á¤ÀÇ
+;; [2] ëª…ë ¹ì–´ ë‹¨ì¶•í‚¤ ì •ì˜
 ;; ==========================================
 
 (defun C:F2P  () (util:lazy-load "REFPOLY.lsp"         'c:REFPOLY_CW))
@@ -44,31 +44,33 @@
 (defun C:OSA3 () (util:lazy-load "CoordRound.lsp"      'c:COORDROUND_OSA3))
 (defun C:VAD  () (util:lazy-load "VertexEdit.lsp"      'c:VERTEX_ADD))
 (defun C:VDE  () (util:lazy-load "VertexEdit.lsp"      'c:VERTEX_DEL))
+(defun C:ODL  () (util:lazy-load "ODLabel.lsp"         'c:ODLABEL))
 
 ;; ==========================================
-;; [3] µµ¿ò¸» ½Ã½ºÅÛ
+;; [3] ë„ì›€ë§ ì‹œìŠ¤í…œ
 ;; ==========================================
 
 (defun C:APPHELP ()
   (princ "\n============================================")
-  (princ "\n AutoCAD 3rd Party µµ±¸ ¸ğÀ½")
-  (princ "\n - Version: 1.0.8 (2026-04-27)")
+  (princ "\n AutoCAD 3rd Party ë„êµ¬ ëª¨ìŒ")
+  (princ "\n - Version: 1.0.10 (2026-04-28)")
   (princ "\n - Developer: LX Kim Byoung-woo")
   (princ "\n============================================")
-  (princ "\n  F2P/F3P   - Æú¸®¶óÀÎ ¹æÇâ Á¤·Ä (CW/CCW)")
-  (princ "\n  AFO/AFO2  - ¸éÀû Á¤¹Ğ Á¶Á¤")
-  (princ "\n  PNC       - Áö¹ø ·¹ÀÌ¾î ºĞÇØ")
-  (princ "\n  WD5/WD10  - µµ°û »ı¼º (500/1000)")
-  (princ "\n  OSA2/OSA3 - ÁÂÇ¥ ¿À»ç¿ÀÀÔ Àç°áÁ¤")
-  (princ "\n  INC       - ¿¬¼Ó¹øÈ£ »ı¼º")
-  (princ "\n  OB        - ¿Ü°û¼± »ı¼º")
-  (princ "\n  A2P       - È£¸¦ Æú¸®¶óÀÎÀ¸·Î º¯È¯")
-  (princ "\n  VAD/VDE   - Á¤Á¡ Ãß°¡/»èÁ¦")
+  (princ "\n  F2P/F3P   - í´ë¦¬ë¼ì¸ ë°©í–¥ ì •ë ¬ (CW/CCW)")
+  (princ "\n  AFO/AFO2  - ë©´ì  ì •ë°€ ì¡°ì •")
+  (princ "\n  PNC       - ì§€ë²ˆ ë ˆì´ì–´ ë¶„í•´")
+  (princ "\n  WD5/WD10  - ë„ê³½ ìƒì„± (500/1000)")
+  (princ "\n  OSA2/OSA3 - ì¢Œí‘œ ì˜¤ì‚¬ì˜¤ì… ì¬ê²°ì •")
+  (princ "\n  INC       - ì—°ì†ë²ˆí˜¸ ìƒì„±")
+  (princ "\n  OB        - ì™¸ê³½ì„  ìƒì„±")
+  (princ "\n  A2P       - í˜¸ë¥¼ í´ë¦¬ë¼ì¸ìœ¼ë¡œ ë³€í™˜")
+  (princ "\n  VAD/VDE   - ì •ì  ì¶”ê°€/ì‚­ì œ")
+  (princ "\n  ODL       - ë ˆì´ë¸” ìƒì„±")
   (princ "\n--------------------------------------------")
-  (princ "\n* ¸ğµç ±â´ÉÀº Ã¹ ½ÇÇà ½Ã ÀÚµ¿À¸·Î ·ÎµåµË´Ï´Ù.")
+  (princ "\n* ëª¨ë“  ê¸°ëŠ¥ì€ ì²« ì‹¤í–‰ ì‹œ ìë™ìœ¼ë¡œ ë¡œë“œë©ë‹ˆë‹¤.")
   (princ "\n============================================")
   (princ)
 )
 
-(princ "\n´ÜÃà ¸í·É¾î ½Ã½ºÅÛ ·Îµå ¿Ï·á.")
+(princ "\në‹¨ì¶• ëª…ë ¹ì–´ ì‹œìŠ¤í…œ ë¡œë“œ ì™„ë£Œ.")
 (princ)
