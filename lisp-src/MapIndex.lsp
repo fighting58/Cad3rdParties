@@ -69,17 +69,27 @@
 ;; [2] 핵심 연산 엔진
 ;; ==========================================
 
-(defun fn:create-map-index (scale / doc origin-x origin-y cell-w cell-h 
+(defun fn:create-map-index (scale / *error* doc origin-x origin-y cell-w cell-h
                                      mode p1 p2 ss extent min-x min-y max-x max-y
                                      start-col end-col start-row end-row
-                                     cur-x cur-y count)
+                                     cur-x cur-y count i j found-in-cell cell-ss k ok)
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
+
+  (defun *error* (msg)
+    (if (not (member msg '("Function cancelled" "quit / exit abort")))
+      (princ (strcat "\n오류: " msg))
+    )
+    (vla-EndUndoMark doc)
+    (princ)
+  )
+
   (vla-StartUndoMark doc)
+  (setq ok T)
 
   ;; 원점 (단위: m)
   (setq origin-x 200000.0
         origin-y 600000.0)
-  
+
   (if (= scale 500)
     (setq cell-w 200.0 cell-h 150.0) ; 1:500 (400mm * 0.5 = 200m)
     (setq cell-w 400.0 cell-h 300.0) ; 1:1000 (400mm * 1.0 = 400m)
@@ -104,75 +114,88 @@
       (princ "\n--- 객체 선택(O) 모드 (포함된 칸만 생성) ---")
       (princ "\n도곽 영역을 계산할 객체들을 선택하고 엔터를 누르세요...")
       (setq ss (ssget))
-      (if (not ss) 
-        (progn (princ "\n선택된 객체가 없어 중단합니다.") (exit))
+      (if (not ss)
+        (progn
+          (princ "\n선택된 객체가 없어 중단합니다.")
+          (setq ok nil)
+        )
       )
-      (setq extent (util:get-extent ss))
-      (setq min-x (car (car extent))
-            min-y (cadr (car extent))
-            max-x (car (cadr extent))
-            max-y (cadr (cadr extent)))
+
+      (if ok
+        (progn
+          (setq extent (util:get-extent ss))
+          (setq min-x (car (car extent))
+                min-y (cadr (car extent))
+                max-x (car (cadr extent))
+                max-y (cadr (cadr extent)))
+        )
+      )
     )
   )
 
-  ;; 2. 그리드 인덱스 계산
-  (setq start-col (fix (util:floor (/ (- min-x origin-x) cell-w)))
-        end-col   (fix (util:floor (/ (- max-x origin-x) cell-w)))
-        start-row (fix (util:floor (/ (- min-y origin-y) cell-h)))
-        end-row   (fix (util:floor (/ (- max-y origin-y) cell-h))))
+  (if ok
+    (progn
+      ;; 2. 그리드 인덱스 계산
+      (setq start-col (fix (util:floor (/ (- min-x origin-x) cell-w)))
+            end-col   (fix (util:floor (/ (- max-x origin-x) cell-w)))
+            start-row (fix (util:floor (/ (- min-y origin-y) cell-h)))
+            end-row   (fix (util:floor (/ (- max-y origin-y) cell-h))))
 
-  ;; 3. 도곽 생성
-  (util:ensure-layer "dokwag" 1) ; Red
-  (setq count 0)
-  (setq i start-col)
-  (while (<= i end-col)
-    (setq j start-row)
-    (while (<= j end-row)
-      (setq cur-x (+ origin-x (* i cell-w))
-            cur-y (+ origin-y (* j cell-h)))
-      
-      (setq p1 (list cur-x cur-y)
-            p2 (list (+ cur-x cell-w) (+ cur-y cell-h)))
-      
-      (setq found-in-cell nil)
-      (if (= mode "Window")
-        (setq found-in-cell T) ; 윈도우 모드는 전체 생성
-        (progn
-          ;; 객체 선택 모드: 현재 칸(p1, p2)에 초기 선택 객체(ss)가 포함되어 있는지 확인
-          (setq cell-ss (ssget "_C" p1 p2))
-          (if cell-ss
+      ;; 3. 도곽 생성
+      (util:ensure-layer "dokwag" 1) ; Red
+      (setq count 0)
+      (setq i start-col)
+      (while (<= i end-col)
+        (setq j start-row)
+        (while (<= j end-row)
+          (setq cur-x (+ origin-x (* i cell-w))
+                cur-y (+ origin-y (* j cell-h)))
+
+          (setq p1 (list cur-x cur-y)
+                p2 (list (+ cur-x cell-w) (+ cur-y cell-h)))
+
+          (setq found-in-cell nil)
+          (if (= mode "Window")
+            (setq found-in-cell T) ; 윈도우 모드는 전체 생성
             (progn
-              (setq k 0)
-              (repeat (sslength cell-ss)
-                (if (not found-in-cell)
-                  (if (ssmemb (ssname cell-ss k) ss)
-                    (setq found-in-cell T)
+              ;; 객체 선택 모드: 현재 칸(p1, p2)에 초기 선택 객체(ss)가 포함되어 있는지 확인
+              (setq cell-ss (ssget "_C" p1 p2))
+              (if cell-ss
+                (progn
+                  (setq k 0)
+                  (repeat (sslength cell-ss)
+                    (if (not found-in-cell)
+                      (if (ssmemb (ssname cell-ss k) ss)
+                        (setq found-in-cell T)
+                      )
+                    )
+                    (setq k (1+ k))
                   )
                 )
-                (setq k (1+ k))
               )
             )
           )
-        )
-      )
 
-      ;; 교차하는 객체가 있거나 윈도우 모드인 경우에만 생성
-      (if found-in-cell
-        (progn
-          (util:draw-rect p1 p2 "dokwag")
-          (setq count (1+ count))
+          ;; 교차하는 객체가 있거나 윈도우 모드인 경우에만 생성
+          (if found-in-cell
+            (progn
+              (util:draw-rect p1 p2 "dokwag")
+              (setq count (1+ count))
+            )
+          )
+          (setq j (1+ j))
         )
+        (setq i (1+ i))
       )
-      (setq j (1+ j))
     )
-    (setq i (1+ i))
   )
 
   (vla-EndUndoMark doc)
-  (princ (strcat "\n완료: " (itoa count) "개의 도곽이 'dokwag' 레이어에 생성되었습니다."))
+  (if ok
+    (princ (strcat "\n완료: " (itoa count) "개의 도곽이 'dokwag' 레이어에 생성되었습니다."))
+  )
   (princ)
 )
-
 ;; ==========================================
 ;; [3] 메인 명령어
 ;; ==========================================
@@ -182,3 +205,4 @@
 
 (princ "\n도곽 생성 도구 로드 완료.")
 (princ)
+

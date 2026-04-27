@@ -76,7 +76,7 @@
 )
 
 ;; 특정 지점에서 가장 긴 방향(각도) 찾기
-(defun util:get-best-angle (pc pts / best-ang max-len ang i p1 p2 d len t-val)
+(defun util:get-best-angle (pc pts / best-ang max-len ang i p1 p2 d len t-val min-t found)
   (setq best-ang 0.0 max-len 0.0 ang 0.0)
   (repeat 18 ; 0~170도 탐색 (10도 간격)
     (setq len 0.0)
@@ -110,7 +110,7 @@
   (list (+ d (* size 0.7071)) d x y size)
 )
 
-(defun fn:polylabel (ent precision / pts bbox p1 p2 min-x min-y max-x max-y width height size cell-queue best-cell x y)
+(defun fn:polylabel (ent precision / pts bbox p1 p2 minpt maxpt min-x min-y max-x max-y width height size cell-queue best-cell cell x y)
   (setq pts (util:get-poly-points ent))
   (vla-getboundingbox (vlax-ename->vla-object ent) 'minpt 'maxpt)
   (setq p1 (vlax-safearray->list minpt) p2 (vlax-safearray->list maxpt))
@@ -144,90 +144,111 @@
 ;; [3] 메인 명령어
 ;; ==========================================
 
-(defun C:ODLABEL (/ *error* ss i ent tables table field val center ang pts old-cmdecho doc)
+(defun C:ODLABEL (/ *error* ss i ent tables field val center ang pts old-cmdecho doc count found-table temp-val tbl ok)
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
-  
+
   (defun *error* (msg)
-    (if (not (member msg '("Function cancelled" "quit / exit abort"))) (princ (strcat "\n오류: " msg)))
+    (if (not (member msg '("Function cancelled" "quit / exit abort")))
+      (princ (strcat "\n오류: " msg))
+    )
+    (setvar "CMDECHO" old-cmdecho)
     (vla-EndUndoMark doc)
-    (command "_.undo" "1")
-    (princ "\n작업이 중단되었습니다.") (princ)
+    (princ "\n작업이 중단되었습니다.")
+    (princ)
   )
 
   (vla-StartUndoMark doc)
   (setq old-cmdecho (getvar "CMDECHO"))
   (setvar "CMDECHO" 0)
+  (setq ok T)
 
   ;; 1. 객체 선택
   (princ "\n레이블을 생성할 폴리라인들을 선택하세요.")
   (setq ss (ssget '((0 . "LWPOLYLINE"))))
-  (if (not ss) (progn (princ "\n선택된 객체가 없습니다.") (exit)))
+  (if (not ss)
+    (progn
+      (princ "\n선택된 객체가 없습니다.")
+      (setq ok nil)
+    )
+  )
 
   ;; 2. 필드 이름 입력
-  (setq field (getstring T "\n출력할 필드 이름을 입력하세요 (모든 테이블 검색): "))
-  (if (= field "") (progn (princ "\n필드 이름이 입력되지 않았습니다.") (exit)))
+  (if ok
+    (progn
+      (setq field (getstring T "\n출력할 필드 이름을 입력하세요 (모든 테이블 검색): "))
+      (if (= field "")
+        (progn
+          (princ "\n필드 이름이 입력되지 않았습니다.")
+          (setq ok nil)
+        )
+      )
+    )
+  )
 
   ;; 3. 루프 처리
-  (princ (strcat "\n'" field "' 필드 검색 및 레이블 생성 중..."))
-  (setq i 0 count 0)
-  (repeat (sslength ss)
-    (setq ent (ssname ss i))
-    (setq val nil found-table nil)
-    
-    ;; 현재 객체에 결합된 모든 테이블 목록 가져오기
-    (setq tables (ade_odgettables ent))
-    
-    ;; 테이블 순회하며 필드 존재 여부 확인
-    (if tables
-      (foreach tbl tables
-        (if (and (not found-table) (ade_odfielddefn tbl field))
-          (progn
-            (setq temp-val (ade_odgetfield ent tbl field 0))
-            (if (and temp-val (/= (vl-princ-to-string temp-val) ""))
+  (if ok
+    (progn
+      (princ (strcat "\n'" field "' 필드 검색 및 레이블 생성 중..."))
+      (setq i 0 count 0)
+      (repeat (sslength ss)
+        (setq ent (ssname ss i))
+        (setq val nil found-table nil)
+
+        ;; 현재 객체에 결합된 모든 테이블 목록 가져오기
+        (setq tables (ade_odgettables ent))
+
+        ;; 테이블 순회하며 필드 존재 여부 확인
+        (if tables
+          (foreach tbl tables
+            (if (and (not found-table) (ade_odfielddefn tbl field))
               (progn
-                (setq val (vl-princ-to-string temp-val))
-                (setq found-table tbl) ; 첫 번째 매칭되는 테이블 발견 시 중단용
+                (setq temp-val (ade_odgetfield ent tbl field 0))
+                (if (and temp-val (/= (vl-princ-to-string temp-val) ""))
+                  (progn
+                    (setq val (vl-princ-to-string temp-val))
+                    (setq found-table tbl)
+                  )
+                )
               )
             )
           )
         )
+
+        ;; 값을 찾은 경우에만 레이블 생성
+        (if (and found-table val)
+          (progn
+            (setq center (fn:polylabel ent 0.1))
+            (setq pts (util:get-poly-points ent))
+            (setq ang (util:get-best-angle center pts))
+
+            (entmake (list
+              '(0 . "TEXT")
+              '(100 . "AcDbEntity")
+              '(100 . "AcDbText")
+              (cons 1 val)
+              (cons 10 center)
+              (cons 11 center)
+              '(40 . 1.0)
+              (cons 50 ang)
+              '(72 . 1)
+              '(73 . 2)
+            ))
+            (setq count (1+ count))
+          )
+        )
+        (setq i (1+ i))
       )
     )
-
-    ;; 값을 찾은 경우에만 레이블 생성
-    (if (and found-table val)
-      (progn
-        ;; 1. 위치 계산 (Visual Center)
-        (setq center (fn:polylabel ent 0.1))
-        
-        ;; 2. 최적 각도 계산 (최장 현 방향)
-        (setq pts (util:get-poly-points ent))
-        (setq ang (util:get-best-angle center pts))
-
-        ;; 3. 텍스트 생성
-        (entmake (list
-          '(0 . "TEXT")
-          '(100 . "AcDbEntity")
-          '(100 . "AcDbText")
-          (cons 1 val)
-          (cons 10 center)
-          (cons 11 center)
-          '(40 . 1.0)
-          (cons 50 ang)
-          '(72 . 1)
-          '(73 . 2)
-        ))
-        (setq count (1+ count))
-      )
-    )
-    (setq i (1+ i))
   )
 
   (setvar "CMDECHO" old-cmdecho)
   (vla-EndUndoMark doc)
-  (princ (strcat "\n완료: 총 " (itoa (sslength ss)) "개 중 " (itoa count) "개의 레이블이 생성되었습니다."))
+  (if ok
+    (princ (strcat "\n완료: 총 " (itoa (sslength ss)) "개 중 " (itoa count) "개의 레이블이 생성되었습니다."))
+  )
   (princ)
 )
-
 (princ "\nOD 레이블 생성 도구(필드 통합 검색) 로드 완료.")
 (princ)
+
+

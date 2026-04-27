@@ -89,9 +89,11 @@
 ;; [2-A] 엔진 1: 구간 이동 방식 (P1, P2 이동)
 ;; ==========================================
 
-(defun fn:adjust-area-move (pts-list idx1 idx2 target-area / 
+(defun fn:adjust-area-move (pts-list idx1 idx2 target-area /
                             pts n i p1 p2 p-prev p-next seg-pts seg-len offset-dist
-                            dx dy v-inward new-seg-pts sub-pts iter current-area)
+                            dx dy v-inward new-seg-pts sub-pts iter current-area
+                            idx-prev idx-next d-val p2-orig new-p2 p1-adj p-last p-last-1 p2-adj
+                            final-seg head tail)
   (setq iter 0 current-area (util:get-signed-area pts-list) n (length pts-list))
   (while (and (< iter 30) (> (abs (- target-area current-area)) 0.01))
     (setq seg-len 0.0 i idx1)
@@ -136,9 +138,9 @@
 ;; [2-B] 엔진 2: 고정점 방식 (P1, P2 유지)
 ;; ==========================================
 
-(defun fn:adjust-area-fixed (pts-list idx1 idx2 target-area / 
+(defun fn:adjust-area-fixed (pts-list idx1 idx2 target-area /
                              pts n i p-chord1 p-chord2 chord-len v-inward offset-dist
-                             new-list current-area iter mid-pt)
+                             new-list current-area iter mid-pt head tail p)
   (setq n (length pts-list) iter 0 current-area (util:get-signed-area pts-list))
   (if (= (rem (1+ idx1) n) idx2)
     (progn
@@ -177,47 +179,102 @@
 ;; [3] 메인 명령어 및 통합 UI
 ;; ==========================================
 
-(defun fn:area-adjust-main (mode-name engine-fn / *error* doc ent pts target-input target-area p1 p2 idx1 idx2 new-pts flat-pts vla-orig vla-ref final-area)
+(defun fn:area-adjust-main (mode-name engine-fn /
+                            *error* doc old-osmode ok
+                            ent pts current-area
+                            target-input target-area
+                            p1 p2 idx1 idx2
+                            new-pts flat-pts vla-orig vla-ref final-area)
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
+  (setq old-osmode (getvar "OSMODE"))
+
   (defun *error* (msg)
-    (if (not (member msg '("Function cancelled" "quit / exit abort"))) (princ (strcat "\n오류: " msg)))
-    (vla-EndUndoMark doc) (princ)
+    (if (not (member msg '("Function cancelled" "quit / exit abort")))
+      (princ (strcat "\n오류: " msg))
+    )
+    (setvar "OSMODE" old-osmode)
+    (vla-EndUndoMark doc)
+    (princ)
   )
+
   (vla-StartUndoMark doc)
+  (setq ok T)
+
   (princ (strcat "\n[" mode-name " 모드 시작]"))
   (setq ent (car (entsel "\n조정할 폴리라인을 선택하세요: ")))
   (if (or (not ent) (/= (cdr (assoc 0 (entget ent))) "LWPOLYLINE"))
-    (progn (princ "\n오류: LWPOLYLINE만 가능.") (exit))
-  )
-  (setq pts (util:ensure-clockwise (util:get-vertices ent))
-        current-area (util:get-signed-area pts))
-  (princ (strcat "\n현재 면적: " (rtos current-area 2 2)))
-  (setq target-input (getstring T "\n목표 면적 입력 (예: 123, @100, #200, d10, t150): ")
-        target-area (util:parse-target current-area target-input))
-  (if (not target-area) (progn (princ "\n오류: 잘못된 입력.") (exit)))
-  (princ (strcat "\n설정된 목표 면적: " (rtos target-area 2 2)))
-  (setvar "OSMODE" 1)
-  (setq p1 (getpoint "\n구간 시작점 P1 클릭: ") idx1 (util:get-nearest-vertex-idx p1 pts 0.001)
-        p2 (getpoint "\n구간 끝점 P2 클릭: ") idx2 (util:get-nearest-vertex-idx p2 pts 0.001))
-  (setvar "OSMODE" 0)
-  (princ "\n연산 중...")
-  (setq new-pts (apply engine-fn (list pts idx1 idx2 target-area)))
-  (if new-pts
     (progn
-      (setq vla-orig (vlax-ename->vla-object ent) vla-ref (vla-copy vla-orig) flat-pts nil)
-      (foreach v new-pts (setq flat-pts (append flat-pts (list (car v) (cadr v)))))
-      (vlax-put-property vla-ref 'Coordinates (vlax-make-variant (vlax-safearray-fill (vlax-make-safearray vlax-vbDouble (cons 0 (1- (length flat-pts)))) flat-pts)))
-      (vla-put-color vla-ref 3)
-      (setq final-area (util:get-signed-area new-pts))
-      (if (<= (abs (- target-area final-area)) 0.01)
-        (princ (strcat "\n[완료] 녹색 ref_object 생성. 면적: " (rtos final-area 2 2)))
-        (princ (strcat "\n[중단] 30회 초과. 녹색 ref_object 생성. 면적: " (rtos final-area 2 2) " (오차: " (rtos (abs (- target-area final-area)) 2 4) ")"))
+      (princ "\n오류: LWPOLYLINE만 가능.")
+      (setq ok nil)
+    )
+  )
+
+  (if ok
+    (progn
+      (setq pts (util:ensure-clockwise (util:get-vertices ent))
+            current-area (util:get-signed-area pts))
+      (princ (strcat "\n현재 면적: " (rtos current-area 2 2)))
+
+      (setq target-input (getstring T "\n목표 면적 입력 (예: 123, @100, #200, d10, t150): ")
+            target-area (util:parse-target current-area target-input))
+      (if (not target-area)
+        (progn
+          (princ "\n오류: 잘못된 입력.")
+          (setq ok nil)
+        )
       )
     )
   )
-  (vla-EndUndoMark doc) (princ)
-)
 
+  (if ok
+    (progn
+      (princ (strcat "\n설정된 목표 면적: " (rtos target-area 2 2)))
+      (setvar "OSMODE" 1)
+      (setq p1 (getpoint "\n구간 시작점 P1 클릭: ")
+            idx1 (util:get-nearest-vertex-idx p1 pts 0.001)
+            p2 (getpoint "\n구간 끝점 P2 클릭: ")
+            idx2 (util:get-nearest-vertex-idx p2 pts 0.001))
+      (setvar "OSMODE" old-osmode)
+
+      (princ "\n연산 중...")
+      (setq new-pts (apply engine-fn (list pts idx1 idx2 target-area)))
+
+      (if new-pts
+        (progn
+          (setq vla-orig (vlax-ename->vla-object ent)
+                vla-ref (vla-copy vla-orig)
+                flat-pts nil)
+          (foreach v new-pts
+            (setq flat-pts (append flat-pts (list (car v) (cadr v))))
+          )
+          (vlax-put-property vla-ref 'Coordinates
+            (vlax-make-variant
+              (vlax-safearray-fill
+                (vlax-make-safearray vlax-vbDouble (cons 0 (1- (length flat-pts))))
+                flat-pts
+              )
+            )
+          )
+          (vla-put-color vla-ref 3)
+
+          (setq final-area (util:get-signed-area new-pts))
+          (if (<= (abs (- target-area final-area)) 0.01)
+            (princ (strcat "\n[완료] 녹색 ref_object 생성. 면적: " (rtos final-area 2 2)))
+            (princ (strcat "\n[중단] 30회 초과. 녹색 ref_object 생성. 면적: "
+                           (rtos final-area 2 2)
+                           " (오차: "
+                           (rtos (abs (- target-area final-area)) 2 4)
+                           ")"))
+          )
+        )
+      )
+    )
+  )
+
+  (setvar "OSMODE" old-osmode)
+  (vla-EndUndoMark doc)
+  (princ)
+)
 ;; 명령어 1: 구간 이동 방식
 (defun C:AREA_ADJUST () (fn:area-adjust-main "구간 이동" 'fn:adjust-area-move))
 
@@ -226,3 +283,5 @@
 
 (princ "\n면적 정밀 조정 도구(통합) 로드 완료.")
 (princ)
+
+

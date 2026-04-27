@@ -21,51 +21,77 @@
 ;; [Core Function]
 ;; ss: selection set of lines/polylines
 ;; returns: ename of the final polyline or nil
-(defun fn:outerbound (ss / *error* acadObj doc fuzz old-cmdecho regionSS finalRegion explodedSS resultSS finalPoly)
+(defun fn:outerbound (ss / *error* acadObj doc fuzz old-cmdecho old-peditaccept regionSS finalRegion explodedSS resultSS finalPoly ok)
   (setq fuzz 0.0005)
   (setq acadObj (vlax-get-acad-object))
   (setq doc (vla-get-ActiveDocument acadObj))
-  
+  (setq old-cmdecho (getvar "CMDECHO"))
+  (setq old-peditaccept (getvar "PEDITACCEPT"))
+
   (defun *error* (msg)
+    (setvar "CMDECHO" old-cmdecho)
+    (setvar "PEDITACCEPT" old-peditaccept)
     (vla-EndUndoMark doc)
     (command "_.undo" "1")
-    (if old-cmdecho (setvar "CMDECHO" old-cmdecho))
-    (princ (strcat "\n오류 발생: " msg))
+    (if (not (member msg '("Function cancelled" "quit / exit abort")))
+      (princ (strcat "\n오류 발생: " msg))
+    )
     nil
   )
 
   (vla-StartUndoMark doc)
-  (setq old-cmdecho (getvar "CMDECHO"))
   (setvar "CMDECHO" 0)
+  (setq ok T)
+  (setq finalPoly nil)
 
   (command "_.region" ss "")
   (setq regionSS (ssget "_P" '((0 . "REGION"))))
-  
-  (if (not regionSS)
-    (progn (vla-EndUndoMark doc) (command "_.undo" "1") (setvar "CMDECHO" old-cmdecho) nil)
+  (if (not regionSS) (setq ok nil))
+
+  (if ok
     (progn
       (if (> (sslength regionSS) 1)
         (command "_.union" regionSS "")
       )
       (setq finalRegion (entlast))
-      (command "_.explode" finalRegion)
-      (setq explodedSS (ssget "_P"))
-      (setvar "PEDITACCEPT" 1)
-      (command "_.pedit" "_m" explodedSS "" "_j" fuzz "")
-      (setq resultSS (ssget "_P" '((0 . "*POLYLINE"))))
-      
-      (if (and resultSS (= (sslength resultSS) 1))
-        (setq finalPoly (ssname resultSS 0))
-        (setq finalPoly nil)
-      )
-      
-      (if (not finalPoly)
-        (progn (vla-EndUndoMark doc) (command "_.undo" "1") (setvar "CMDECHO" old-cmdecho) nil)
-        (progn (vla-EndUndoMark doc) (setvar "CMDECHO" old-cmdecho) finalPoly)
+      (if finalRegion
+        (command "_.explode" finalRegion)
+        (setq ok nil)
       )
     )
   )
-)
 
+  (if ok
+    (progn
+      (setq explodedSS (ssget "_P"))
+      (if explodedSS
+        (progn
+          (setvar "PEDITACCEPT" 1)
+          (command "_.pedit" "_m" explodedSS "" "_j" fuzz "")
+          (setq resultSS (ssget "_P" '((0 . "*POLYLINE"))))
+          (if (and resultSS (= (sslength resultSS) 1))
+            (setq finalPoly (ssname resultSS 0))
+          )
+        )
+        (setq ok nil)
+      )
+    )
+  )
+
+  (if (not finalPoly)
+    (progn
+      (vla-EndUndoMark doc)
+      (command "_.undo" "1")
+    )
+    (vla-EndUndoMark doc)
+  )
+
+  (setvar "CMDECHO" old-cmdecho)
+  (setvar "PEDITACCEPT" old-peditaccept)
+  finalPoly
+)
 (princ "\n외곽선 추출 도구 로드 완료.")
 (princ)
+
+
+

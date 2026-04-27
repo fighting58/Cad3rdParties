@@ -1,34 +1,34 @@
 ;;; ParcelSplit.lsp
-;;; Áö¹ø ·¹ÀÌ¾î(19)¸¦ ±¸¼º ¿ä¼Òº°·Î ºĞÇØÇÏ¿© 10, 11, 20 ·¹ÀÌ¾î·Î ºĞ¸® »ı¼º
-;;; AutoCAD 2013 & Windows 11 È¯°æ ÃÖÀûÈ­
+;;; ì§€ë²ˆ ë ˆì´ì–´(19)ë¥¼ êµ¬ì„± ìš”ì†Œë³„ë¡œ ë¶„í•´í•˜ì—¬ 10, 11, 20 ë ˆì´ì–´ë¡œ ë¶„ë¦¬ ìƒì„±
+;;; AutoCAD 2013 & Windows 11 í™˜ê²½ ìµœì í™”
 
 (vl-load-com)
 
 ;; ==========================================
-;; [1] À¯Æ¿¸®Æ¼ ÇÔ¼ö
+;; [1] ìœ í‹¸ë¦¬í‹° í•¨ìˆ˜
 ;; ==========================================
 
-;; ·¹ÀÌ¾î »ı¼º ¹× »ö»ó ¼³Á¤
+;; ë ˆì´ì–´ ìƒì„± ë° ìƒ‰ìƒ ì„¤ì •
 (defun util:ensure-layer (layname color)
   (if (not (tblsearch "LAYER" layname))
     (command "_.layer" "_make" layname "_color" color layname "")
   )
 )
 
-;; Áö¸ñ ¸®½ºÆ® Á¤ÀÇ (28Á¾)
-(setq *jimok-list* '("Àü" "´ä" "°ú" "¸ñ" "ÀÓ" "±¤" "¿°" "´ë" "Àå" "ÇĞ" "Â÷" "ÁÖ" "Ã¢" "µµ" "Ã¶" "Á¦" "Ãµ" "±¸" "À¯" "¾ç" "¼ö" "°ø" "Ã¼" "¿ø" "Á¾" "»ç" "¹¦" "Àâ"))
+;; ì§€ëª© ë¦¬ìŠ¤íŠ¸ ì •ì˜ (28ì¢…)
+(setq *jimok-list* '("ì „" "ë‹µ" "ê³¼" "ëª©" "ì„" "ê´‘" "ì—¼" "ëŒ€" "ì¥" "í•™" "ì°¨" "ì£¼" "ì°½" "ë„" "ì² " "ì œ" "ì²œ" "êµ¬" "ìœ " "ì–‘" "ìˆ˜" "ê³µ" "ì²´" "ì›" "ì¢…" "ì‚¬" "ë¬˜" "ì¡"))
 
-;; Áö¹ø ¹®ÀÚ¿­ ÆÄ½Ì ¿£Áø
+;; ì§€ë²ˆ ë¬¸ìì—´ íŒŒì‹± ì—”ì§„
 (defun fn:parse-parcel-string (str / res-reg res-jimok res-jibeon last-char)
   (setq str (vl-string-trim " " str))
   
-  ;; 1. ´ëÀå ±¸ºĞ (20 ·¹ÀÌ¾î¿ë)
-  (if (wcmatch str "»ê*")
-    (setq res-reg "2" str (vl-string-left-trim "»ê" str))
+  ;; 1. ëŒ€ì¥ êµ¬ë¶„ (20 ë ˆì´ì–´ìš©)
+  (if (wcmatch str "ì‚°*")
+    (setq res-reg "2" str (vl-string-left-trim "ì‚°" str))
     (setq res-reg "1")
   )
   
-  ;; 2. Áö¸ñ ÃßÃâ (11 ·¹ÀÌ¾î¿ë)
+  ;; 2. ì§€ëª© ì¶”ì¶œ (11 ë ˆì´ì–´ìš©)
   (setq last-char (substr str (strlen str)))
   (if (member last-char *jimok-list*)
     (progn
@@ -38,83 +38,97 @@
     (setq res-jimok "")
   )
   
-  ;; 3. Áö¹ø Á¤Á¦ (10 ·¹ÀÌ¾î¿ë)
+  ;; 3. ì§€ë²ˆ ì •ì œ (10 ë ˆì´ì–´ìš©)
   (setq res-jibeon (vl-string-trim " " str))
-  ;; ºÎ¹øÀÌ -0 ÀÌ°Å³ª - ÀÎ °æ¿ì Á¦°Å
+  ;; ë¶€ë²ˆì´ -0 ì´ê±°ë‚˜ - ì¸ ê²½ìš° ì œê±°
   (cond
     ((wcmatch res-jibeon "*-0") (setq res-jibeon (substr res-jibeon 1 (- (strlen res-jibeon) 2))))
     ((wcmatch res-jibeon "*-") (setq res-jibeon (substr res-jibeon 1 (- (strlen res-jibeon) 1))))
   )
   
-  ;; ÀÓ¾ß´ëÀå(2)ÀÎ °æ¿ì Áö¹ø ¾Õ¿¡ "»ê" ´Ù½Ã ºÙÀÌ±â
+  ;; ì„ì•¼ëŒ€ì¥(2)ì¸ ê²½ìš° ì§€ë²ˆ ì•ì— "ì‚°" ë‹¤ì‹œ ë¶™ì´ê¸°
   (if (= res-reg "2")
-    (setq res-jibeon (strcat "»ê" res-jibeon))
+    (setq res-jibeon (strcat "ì‚°" res-jibeon))
   )
   
   (list res-jibeon res-jimok res-reg)
 )
 
 ;; ==========================================
-;; [2] ¸ŞÀÎ ¸í·É¾î
+;; [2] ë©”ì¸ ëª…ë ¹ì–´
 ;; ==========================================
 
-(defun C:PARCEL_SPLIT (/ *error* doc lay-in ss i ent obj str-data p-jibeon p-jimok p-reg count)
+(defun C:PARCEL_SPLIT (/ *error* doc lay-in ss i ent obj str str-data p-jibeon p-jimok p-reg count new-obj item ok)
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
-  
+
   (defun *error* (msg)
-    (if (not (member msg '("Function cancelled" "quit / exit abort"))) (princ (strcat "\n¿À·ù: " msg)))
-    (vla-EndUndoMark doc) (princ)
+    (if (not (member msg '("Function cancelled" "quit / exit abort")))
+      (princ (strcat "\nì˜¤ë¥˜: " msg))
+    )
+    (vla-EndUndoMark doc)
+    (princ)
   )
 
   (vla-StartUndoMark doc)
+  (setq ok T)
 
-  ;; 1. ·¹ÀÌ¾î ÀÔ·Â ¹× ÁØºñ
-  (setq lay-in (getstring "\nÁö¹ø ·¹ÀÌ¾î ÀÔ·Â(±âº»: 19): "))
+  ;; 1. ë ˆì´ì–´ ì…ë ¥ ë° ì¤€ë¹„
+  (setq lay-in (getstring "\nì§€ë²ˆ ë ˆì´ì–´ ì…ë ¥(ê¸°ë³¸: 19): "))
   (if (= lay-in "") (setq lay-in "19"))
-  
+
   (util:ensure-layer "10" 4) ; Cyan
   (util:ensure-layer "11" 4) ; Cyan
   (util:ensure-layer "20" 3) ; Green
 
-  ;; 2. °´Ã¼ ¼±ÅÃ
-  (princ (strcat "\n'" lay-in "' ·¹ÀÌ¾îÀÇ Áö¹ø ¹®ÀÚµéÀ» Ã³¸® Áß..."))
+  ;; 2. ê°ì²´ ì„ íƒ
+  (princ (strcat "\n'" lay-in "' ë ˆì´ì–´ì˜ ì§€ë²ˆ ë¬¸ìë“¤ì„ ì²˜ë¦¬ ì¤‘..."))
   (setq ss (ssget "X" (list '(0 . "TEXT,MTEXT") (cons 8 lay-in))))
-  
+
   (if (not ss)
-    (progn (princ (strcat "\n¿À·ù: '" lay-in "' ·¹ÀÌ¾î¿¡ ¹®ÀÚ °´Ã¼°¡ ¾ø½À´Ï´Ù.")) (exit))
+    (progn
+      (princ (strcat "\nì˜¤ë¥˜: '" lay-in "' ë ˆì´ì–´ì— ë¬¸ì ê°ì²´ê°€ ì—†ìŠµë‹ˆë‹¤."))
+      (setq ok nil)
+    )
   )
 
-  ;; 3. ·çÇÁ Ã³¸®
-  (setq i 0 count 0)
-  (repeat (sslength ss)
-    (setq ent (ssname ss i))
-    (setq obj (vlax-ename->vla-object ent))
-    (setq str (vla-get-TextString obj))
-    
-    ;; µ¥ÀÌÅÍ ÆÄ½Ì
-    (setq str-data (fn:parse-parcel-string str))
-    (setq p-jibeon (nth 0 str-data)
-          p-jimok   (nth 1 str-data)
-          p-reg     (nth 2 str-data))
-    
-    ;; »õ·Î¿î ¹®ÀÚ °´Ã¼ »ı¼º (µ¿ÀÏ À§Ä¡/¼Ó¼º º¹Á¦)
-    (foreach item (list (list "10" p-jibeon) (list "11" p-jimok) (list "20" p-reg))
-      (if (and (cadr item) (/= (cadr item) ""))
-        (progn
-          (setq new-obj (vla-copy obj))
-          (vla-put-Layer new-obj (car item))
-          (vla-put-TextString new-obj (cadr item))
+  ;; 3. ë£¨í”„ ì²˜ë¦¬
+  (if ok
+    (progn
+      (setq i 0 count 0)
+      (repeat (sslength ss)
+        (setq ent (ssname ss i))
+        (setq obj (vlax-ename->vla-object ent))
+        (setq str (vla-get-TextString obj))
+
+        ;; ë°ì´í„° íŒŒì‹±
+        (setq str-data (fn:parse-parcel-string str))
+        (setq p-jibeon (nth 0 str-data)
+              p-jimok   (nth 1 str-data)
+              p-reg     (nth 2 str-data))
+
+        ;; ìƒˆë¡œìš´ ë¬¸ì ê°ì²´ ìƒì„± (ë™ì¼ ìœ„ì¹˜/ì†ì„± ë³µì œ)
+        (foreach item (list (list "10" p-jibeon) (list "11" p-jimok) (list "20" p-reg))
+          (if (and (cadr item) (/= (cadr item) ""))
+            (progn
+              (setq new-obj (vla-copy obj))
+              (vla-put-Layer new-obj (car item))
+              (vla-put-TextString new-obj (cadr item))
+            )
+          )
         )
+
+        (setq i (1+ i) count (1+ count))
       )
     )
-    
-    (setq i (1+ i) count (1+ count))
   )
 
   (vla-EndUndoMark doc)
-  (princ (strcat "\n¿Ï·á: ÃÑ " (itoa count) "°³ÀÇ Áö¹ø ¹®ÀÚ¸¦ ºĞÇØÇÏ¿´½À´Ï´Ù."))
+  (if ok
+    (princ (strcat "\nì™„ë£Œ: ì´ " (itoa count) "ê°œì˜ ì§€ë²ˆ ë¬¸ìë¥¼ ë¶„í•´í•˜ì˜€ìŠµë‹ˆë‹¤."))
+  )
   (princ)
 )
-
-(princ "\nÁö¹ø ·¹ÀÌ¾î ºĞÇØ µµ±¸ ·Îµå ¿Ï·á.")
+(princ "\nì§€ë²ˆ ë ˆì´ì–´ ë¶„í•´ ë„êµ¬ ë¡œë“œ ì™„ë£Œ.")
 (princ)
+
+
