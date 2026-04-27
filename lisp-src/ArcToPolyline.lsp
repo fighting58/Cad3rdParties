@@ -98,7 +98,7 @@
 )
 
 ;; 정점 리스트로 노란색 LWPolyline 생성
-(defun util:create-lwpolyline-yellow (pts / ac-doc space obj coords i)
+(defun util:create-ref-polyline (pts / ac-doc space obj coords i)
   (setq ac-doc (vla-get-activedocument (vlax-get-acad-object)))
   (setq space (vla-get-modelspace ac-doc))
   (setq coords (vlax-make-safearray vlax-vbDouble (cons 0 (1- (* (length pts) 2)))))
@@ -109,7 +109,7 @@
     (setq i (+ i 2))
   )
   (setq obj (vla-addlightweightpolyline space coords))
-  (vla-put-color obj 2)
+  (vla-put-color obj 3)
   obj
 )
 
@@ -159,7 +159,7 @@
     (cond
       ((= type "ARC")
        (setq pts (util:get-arc-segmented-points vla-obj (vlax-curve-getStartParam vla-obj) (vlax-curve-getEndParam vla-obj) mode val))
-       (util:create-lwpolyline-yellow pts)
+       (util:create-ref-polyline pts)
        (setq count (1+ count)))
       ((= type "LWPOLYLINE")
        (setq pts nil j 0 num-segs (fix (vlax-curve-getEndParam vla-obj)))
@@ -176,10 +176,10 @@
          (setq j (1+ j))
        )
        (if (= (vla-get-closed vla-obj) :vlax-true)
-         (setq new-poly (util:create-lwpolyline-yellow (reverse pts)))
+         (setq new-poly (util:create-ref-polyline (reverse pts)))
          (progn
            (setq pts (cons (vlax-curve-getPointAtParam vla-obj num-segs) pts))
-           (setq new-poly (util:create-lwpolyline-yellow (reverse pts)))
+           (setq new-poly (util:create-ref-polyline (reverse pts)))
          )
        )
        (if (= (vla-get-closed vla-obj) :vlax-true) (vla-put-closed new-poly :vlax-true))
@@ -194,5 +194,7 @@
   (princ)
 )
 
-(princ "\n호 변환 도구(Arc to Polyline) 로드 완료.")
+(princ "\n호 변환 도구 로드 완료.")
 (princ)
+
+
