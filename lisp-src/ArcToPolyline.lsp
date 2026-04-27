@@ -1,28 +1,28 @@
-;;; Arc to Polyline ë³€í™˜ ë„êµ¬ (A2P)
-;;; AutoCAD Map 3D 2013 ë° Windows 11 í™˜ê²½ ìµœì í™”
-;;; í˜¸(Arc) ë° í´ë¦¬ë¼ì¸ ë‚´ì˜ í˜¸ ì„¸ê·¸ë¨¼íŠ¸ë¥¼ ì„ ë¶„ìœ¼ë¡œ êµ¬ì„±ëœ í´ë¦¬ë¼ì¸ìœ¼ë¡œ ë³€í™˜í•©ë‹ˆë‹¤.
+;;; Arc to Polyline º¯È¯ µµ±¸ (A2P)
+;;; AutoCAD Map 3D 2013 ¹× Windows 11 È¯°æ ÃÖÀûÈ­
+;;; È£(Arc) ¹× Æú¸®¶óÀÎ ³»ÀÇ È£ ¼¼±×¸ÕÆ®¸¦ ¼±ºĞÀ¸·Î ±¸¼ºµÈ Æú¸®¶óÀÎÀ¸·Î º¯È¯ÇÕ´Ï´Ù.
 ;;; 
-;;; ì£¼ìš” ê¸°ëŠ¥:
-;;; 1. ìˆ˜ëŸ‰(n) ì§€ì • ë³€í™˜
-;;; 2. ì¤‘ì•™ì¢…ê±°(ìµœëŒ€ 5cm) ê¸°ì¤€ ë³€í™˜
-;;; 3. í˜„ì˜ ê¸¸ì´(d) ê¸°ì¤€ ë³€í™˜
+;;; ÁÖ¿ä ±â´É:
+;;; 1. ¼ö·®(n) ÁöÁ¤ º¯È¯
+;;; 2. Áß¾ÓÁ¾°Å(ÃÖ´ë 5cm) ±âÁØ º¯È¯
+;;; 3. ÇöÀÇ ±æÀÌ(d) ±âÁØ º¯È¯
 ;;;
-;;; ì¶œë ¥: í˜„ì¬ ë ˆì´ì–´ì— ë…¸ë€ìƒ‰(Color 2)ìœ¼ë¡œ ìƒˆë¡œìš´ ê°ì²´ ìƒì„±.
-;;; [Rule 3 ì˜ˆì™¸]: ì‚¬ìš©ì ìš”ì²­ì— ë”°ë¼ í‘œì¤€ ë…¹ìƒ‰(Color 3) ëŒ€ì‹  ë…¸ë€ìƒ‰(Color 2) ì ìš©.
-;;; ì›ë³¸ ê°ì²´ëŠ” ë³´ì¡´ë©ë‹ˆë‹¤.
+;;; Ãâ·Â: ÇöÀç ·¹ÀÌ¾î¿¡ ³ë¶õ»ö(Color 2)À¸·Î »õ·Î¿î °´Ã¼ »ı¼º.
+;;; [Rule 3 ¿¹¿Ü]: »ç¿ëÀÚ ¿äÃ»¿¡ µû¶ó Ç¥ÁØ ³ì»ö(Color 3) ´ë½Å ³ë¶õ»ö(Color 2) Àû¿ë.
+;;; ¿øº» °´Ã¼´Â º¸Á¸µË´Ï´Ù.
 
 (vl-load-com)
 
 ;; ==========================================
-;; [1] ê¸°í•˜ ì—°ì‚° ë° ê³µí†µ ìœ í‹¸ë¦¬í‹° (util:)
+;; [1] ±âÇÏ ¿¬»ê ¹× °øÅë À¯Æ¿¸®Æ¼ (util:)
 ;; ==========================================
 
-;; í—¬í¼: í˜¸ ì„¸ê·¸ë¨¼íŠ¸ì— ëŒ€í•œ ë¶„í•  ì  ê³„ì‚°
-;; obj: vla-object (arc ë˜ëŠ” polyline)
-;; start_param: ì‹œì‘ íŒŒë¼ë¯¸í„° (double)
-;; end_param: ë íŒŒë¼ë¯¸í„° (double)
-;; mode: ë³€í™˜ ëª¨ë“œ ("N", "M", "D")
-;; val: ì„¤ì • ê°’ (number)
+;; ÇïÆÛ: È£ ¼¼±×¸ÕÆ®¿¡ ´ëÇÑ ºĞÇÒ Á¡ °è»ê
+;; obj: vla-object (arc ¶Ç´Â polyline)
+;; start_param: ½ÃÀÛ ÆÄ¶ó¹ÌÅÍ (double)
+;; end_param: ³¡ ÆÄ¶ó¹ÌÅÍ (double)
+;; mode: º¯È¯ ¸ğµå ("N", "M", "D")
+;; val: ¼³Á¤ °ª (number)
 (defun util:get-arc-segmented-points (obj start_param end_param mode val / 
                       dist_start dist_end total_dist n seg_dist pts p i radius ang bulge p1 p2 dist_p1p2 x seg_ang)
   (setq dist_start (vlax-curve-getDistAtParam obj start_param)
@@ -30,13 +30,13 @@
         total_dist (abs (- dist_end dist_start))
   )
 
-  ;; Mode M(ì¤‘ì•™ì¢…ê±°) ë° D(í˜„ì˜ ê¸¸ì´)ë¥¼ ìœ„í•´ ë°˜ì§€ë¦„ê³¼ ì „ì²´ ê°ë„ ê³„ì‚°
+  ;; Mode M(Áß¾ÓÁ¾°Å) ¹× D(ÇöÀÇ ±æÀÌ)¸¦ À§ÇØ ¹İÁö¸§°ú ÀüÃ¼ °¢µµ °è»ê
   (if (or (= mode "M") (= mode "D"))
     (if (= (vla-get-objectname obj) "AcDbArc")
       (setq radius (vla-get-radius obj)
             ang    (vla-get-totalangle obj))
       (progn
-        ;; í´ë¦¬ë¼ì¸ ë‚´ì˜ í˜¸ ì„¸ê·¸ë¨¼íŠ¸ì¸ ê²½ìš°
+        ;; Æú¸®¶óÀÎ ³»ÀÇ È£ ¼¼±×¸ÕÆ®ÀÎ °æ¿ì
         (setq bulge (vla-getbulge obj (fix start_param)))
         (setq p1 (vlax-curve-getPointAtParam obj start_param))
         (setq p2 (vlax-curve-getPointAtParam obj end_param))
@@ -48,11 +48,11 @@
   )
 
   (cond
-    ;; Mode N: ìˆ˜ëŸ‰ ì§€ì • ë°©ì‹
+    ;; Mode N: ¼ö·® ÁöÁ¤ ¹æ½Ä
     ((= mode "N")
      (setq n val))
     
-    ;; Mode M: ì¤‘ì•™ì¢…ê±° ê¸°ì¤€ (h <= val)
+    ;; Mode M: Áß¾ÓÁ¾°Å ±âÁØ (h <= val)
     ((= mode "M")
      (if (<= radius val)
        (setq n 1)
@@ -67,7 +67,7 @@
      )
     )
 
-    ;; Mode D: í˜„ì˜ ê¸¸ì´ ê¸°ì¤€ (d)
+    ;; Mode D: ÇöÀÇ ±æÀÌ ±âÁØ (d)
     ((= mode "D")
      (if (<= val (* 2.0 radius))
        (progn
@@ -75,14 +75,14 @@
          (setq seg_ang (* 2.0 (atan x (sqrt (- 1.0 (* x x))))))
          (setq n (fix (/ ang seg_ang)))
        )
-       (setq n 1) ;; í˜„ì˜ ê¸¸ì´ê°€ ì§€ë¦„ë³´ë‹¤ ê¸´ ê²½ìš°
+       (setq n 1) ;; ÇöÀÇ ±æÀÌ°¡ Áö¸§º¸´Ù ±ä °æ¿ì
      )
     )
   )
 
-  ;; ì  ë¦¬ìŠ¤íŠ¸ ìƒì„±
+  ;; Á¡ ¸®½ºÆ® »ı¼º
   (if (= mode "D")
-    ;; Mode D ì „ìš©: ì¼ì •í•œ ê°„ê²© ìœ ì§€ í›„ ë§ˆì§€ë§‰ ì  ì¶”ê°€
+    ;; Mode D Àü¿ë: ÀÏÁ¤ÇÑ °£°İ À¯Áö ÈÄ ¸¶Áö¸· Á¡ Ãß°¡
     (progn
       (setq pts (list (vlax-curve-getPointAtParam obj start_param)))
       (setq i 1)
@@ -96,7 +96,7 @@
       (setq pts (cons (vlax-curve-getPointAtParam obj end_param) pts))
       (setq pts (reverse pts))
     )
-    ;; Mode N ë° M: ê· ë“± ë¶„í•  ë°©ì‹
+    ;; Mode N ¹× M: ±Õµî ºĞÇÒ ¹æ½Ä
     (progn
       (setq pts nil)
       (setq i 0)
@@ -113,7 +113,7 @@
   pts
 )
 
-;; í—¬í¼: ì  ë¦¬ìŠ¤íŠ¸ë¡œë¶€í„° LWPolyline ìƒì„±
+;; ÇïÆÛ: Á¡ ¸®½ºÆ®·ÎºÎÅÍ LWPolyline »ı¼º
 (defun util:create-lwpolyline-yellow (pts / acDoc space obj coords i)
   (setq acDoc (vla-get-activedocument (vlax-get-acad-object)))
   (setq space (vla-get-modelspace acDoc))
@@ -125,22 +125,22 @@
     (setq i (+ i 2))
   )
   (setq obj (vla-addlightweightpolyline space coords))
-  (vla-put-color obj 2) ;; ë…¸ë€ìƒ‰ ì ìš© (ì‚¬ìš©ì ìš”ì²­ì— ë”°ë¥¸ Rule 3 ì˜ˆì™¸)
+  (vla-put-color obj 2) ;; ³ë¶õ»ö Àû¿ë (»ç¿ëÀÚ ¿äÃ»¿¡ µû¸¥ Rule 3 ¿¹¿Ü)
   obj
 )
 
 ;; ==========================================
-;; [2] ë©”ì¸ ëª…ë ¹ì–´ (C:A2P)
+;; [2] ¸ŞÀÎ ¸í·É¾î (C:A2P)
 ;; ==========================================
 
 (defun C:ARCTOPOLYLINE (/ *error* ss mode val i ent data type old_cmdecho old_osmode count acDoc vla_obj j num_segs bulge p1 seg_pts pts new_poly)
   
   (setq acDoc (vla-get-activedocument (vlax-get-acad-object)))
 
-  ;; ì—ëŸ¬ í•¸ë“¤ëŸ¬
+  ;; ¿¡·¯ ÇÚµé·¯
   (defun *error* (msg)
     (if (not (member msg '("Function cancelled" "quit / exit abort")))
-      (princ (strcat "\nì˜¤ë¥˜: " msg))
+      (princ (strcat "\n¿À·ù: " msg))
     )
     (if old_cmdecho (setvar "CMDECHO" old_cmdecho))
     (if old_osmode (setvar "OSMODE" old_osmode))
@@ -148,36 +148,36 @@
     (princ)
   )
 
-  ;; ì‹œì‘ ì•ˆë‚´
-  (princ "\ní˜¸ ë³€í™˜ ë„êµ¬ (Arc to Polyline) [ARCTOPOLYLINE]")
+  ;; ½ÃÀÛ ¾È³»
+  (princ "\nÈ£ º¯È¯ µµ±¸ (Arc to Polyline) [ARCTOPOLYLINE]")
   
-  ;; ê°ì²´ ì„ íƒ (Arc ë° LWPolylineë§Œ í•„í„°ë§)
+  ;; °´Ã¼ ¼±ÅÃ (Arc ¹× LWPolyline¸¸ ÇÊÅÍ¸µ)
   (setq ss (ssget '((0 . "ARC,LWPOLYLINE"))))
   (if (not ss)
-    (progn (princ "\nì„ íƒëœ ê°ì²´ê°€ ì—†ìŠµë‹ˆë‹¤.") (exit))
+    (progn (princ "\n¼±ÅÃµÈ °´Ã¼°¡ ¾ø½À´Ï´Ù.") (exit))
   )
 
-  ;; ì˜µì…˜ ì„ íƒ
+  ;; ¿É¼Ç ¼±ÅÃ
   (initget "Number Midordinate Distance")
-  (setq mode (getkword "\në³€í™˜ ì˜µì…˜ ì„ íƒ [ìˆ˜ëŸ‰(N)/ì¤‘ì•™ì¢…ê±°(M)/ë“±ê°„ê²©(D)]: "))
+  (setq mode (getkword "\nº¯È¯ ¿É¼Ç ¼±ÅÃ [¼ö·®(N)/Áß¾ÓÁ¾°Å(M)/µî°£°İ(D)]: "))
   (if (not mode) (setq mode "Number"))
 
   (cond
     ((= mode "Number") 
      (setq mode "N")
-     (setq val (getint "\në¶„í•  ìˆ˜ëŸ‰ ì…ë ¥ <10>: "))
+     (setq val (getint "\nºĞÇÒ ¼ö·® ÀÔ·Â <10>: "))
      (if (not val) (setq val 10)))
     ((= mode "Midordinate")
      (setq mode "M")
-     (setq val (getdist "\nì¤‘ì•™ì¢…ê±°(m) ì…ë ¥ <0.05>: "))
-     (if (not val) (setq val 0.05))) ;; ê¸°ë³¸ 0.05m
+     (setq val (getdist "\nÁß¾ÓÁ¾°Å(m) ÀÔ·Â <0.05>: "))
+     (if (not val) (setq val 0.05))) ;; ±âº» 0.05m
     ((= mode "Distance")
      (setq mode "D")
-     (setq val (getdist "\ní˜„ì˜ ê¸¸ì´(m) ì…ë ¥ <1.0>: "))
+     (setq val (getdist "\nÇöÀÇ ±æÀÌ(m) ÀÔ·Â <1.0>: "))
      (if (not val) (setq val 1.0)))
   )
 
-  ;; ì‹œìŠ¤í…œ ë³€ìˆ˜ ì €ì¥ ë° ì„¤ì •
+  ;; ½Ã½ºÅÛ º¯¼ö ÀúÀå ¹× ¼³Á¤
   (setq old_cmdecho (getvar "CMDECHO"))
   (setq old_osmode (getvar "OSMODE"))
   (setvar "CMDECHO" 0)
@@ -186,7 +186,7 @@
 
   (setq count 0)
   (setq i 0)
-  ;; ì„ íƒ ì„¸íŠ¸ ìˆœíšŒ
+  ;; ¼±ÅÃ ¼¼Æ® ¼øÈ¸
   (repeat (sslength ss)
     (setq ent (ssname ss i))
     (setq data (entget ent))
@@ -194,7 +194,7 @@
     (setq vla_obj (vlax-ename->vla-object ent))
     
     (cond
-      ;; ARC ì²˜ë¦¬
+      ;; ARC Ã³¸®
       ((= type "ARC")
        (setq pts (util:get-arc-segmented-points vla_obj 
                                 (vlax-curve-getStartParam vla_obj) 
@@ -204,22 +204,22 @@
        (setq count (1+ count))
       )
 
-      ;; LWPOLYLINE ì²˜ë¦¬
+      ;; LWPOLYLINE Ã³¸®
       ((= type "LWPOLYLINE")
        (setq pts nil)
        (setq j 0)
        (setq num_segs (fix (vlax-curve-getEndParam vla_obj)))
-       ;; ê° ì„¸ê·¸ë¨¼íŠ¸ ìˆœíšŒ
+       ;; °¢ ¼¼±×¸ÕÆ® ¼øÈ¸
        (while (< j num_segs)
          (setq bulge (vla-getbulge vla_obj j))
          (setq p1 (vlax-curve-getPointAtParam vla_obj j))
          (if (= bulge 0.0)
-           ;; ì§ì„  ì„¸ê·¸ë¨¼íŠ¸
+           ;; Á÷¼± ¼¼±×¸ÕÆ®
            (setq pts (cons p1 pts))
-           ;; í˜¸ ì„¸ê·¸ë¨¼íŠ¸
+           ;; È£ ¼¼±×¸ÕÆ®
            (progn
              (setq seg_pts (util:get-arc-segmented-points vla_obj j (1+ j) mode val))
-             ;; ì¤‘ë³µì  ì œê±°ë¥¼ ìœ„í•´ ë§ˆì§€ë§‰ ì  ì œì™¸
+             ;; Áßº¹Á¡ Á¦°Å¸¦ À§ÇØ ¸¶Áö¸· Á¡ Á¦¿Ü
              (setq seg_pts (reverse (cdr (reverse seg_pts))))
              (setq pts (append (reverse seg_pts) pts))
            )
@@ -228,16 +228,16 @@
        )
        
        (if (= (vla-get-closed vla_obj) :vlax-true)
-         ;; íí•©ëœ ê²½ìš°
+         ;; ÆóÇÕµÈ °æ¿ì
          (setq new_poly (util:create-lwpolyline-yellow (reverse pts)))
          (progn
-           ;; ì—´ë¦° í´ë¦¬ë¼ì¸ì˜ ê²½ìš° ë§ˆì§€ë§‰ ì •ì  ì¶”ê°€
+           ;; ¿­¸° Æú¸®¶óÀÎÀÇ °æ¿ì ¸¶Áö¸· Á¤Á¡ Ãß°¡
            (setq pts (cons (vlax-curve-getPointAtParam vla_obj num_segs) pts))
            (setq new_poly (util:create-lwpolyline-yellow (reverse pts)))
          )
        )
        
-       ;; ì›ë³¸ì´ íí•© ìƒíƒœì˜€ë‹¤ë©´ ê²°ê³¼ë¬¼ë„ íí•© ì²˜ë¦¬
+       ;; ¿øº»ÀÌ ÆóÇÕ »óÅÂ¿´´Ù¸é °á°ú¹°µµ ÆóÇÕ Ã³¸®
        (if (= (vla-get-closed vla_obj) :vlax-true)
          (vla-put-closed new_poly :vlax-true)
        )
@@ -247,13 +247,13 @@
     (setq i (1+ i))
   )
 
-  ;; ì •ë¦¬ ë° ë³µêµ¬
+  ;; Á¤¸® ¹× º¹±¸
   (vla-endundomark acDoc)
   (setvar "CMDECHO" old_cmdecho)
   (setvar "OSMODE" old_osmode)
-  (princ (strcat "\nì´ " (itoa count) "ê°œì˜ ê°ì²´ê°€ ë³€í™˜ë˜ì—ˆìŠµë‹ˆë‹¤."))
+  (princ (strcat "\nÃÑ " (itoa count) "°³ÀÇ °´Ã¼°¡ º¯È¯µÇ¾ú½À´Ï´Ù."))
   (princ)
 )
 
-(princ "\ní˜¸ ë³€í™˜ ë„êµ¬(Arc to Polyline) ë¡œë“œ ì™„ë£Œ.")
+(princ "\nÈ£ º¯È¯ µµ±¸(Arc to Polyline) ·Îµå ¿Ï·á.")
 (princ)

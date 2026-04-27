@@ -1,21 +1,33 @@
 ;;; MapIndex.lsp
-;;; ì›ì (200000, 600000) ê¸°ì¤€ ì¶•ì²™ë³„ ë„ê³½ ìë™ ìƒì„± ë„êµ¬
-;;; AutoCAD 2013 & Windows 11 í™˜ê²½ ìµœì í™”
+;;; ¿øÁ¡(200000, 600000) ±âÁØ ÃàÃ´º° µµ°û ÀÚµ¿ »ı¼º µµ±¸
+;;; AutoCAD 2013 & Windows 11 È¯°æ ÃÖÀûÈ­
 
 (vl-load-com)
 
+;; util:floor ÇÔ¼ö (³»¸²)
+(defun util:floor (n)
+  (if (>= n 0)
+    (fix n)
+    (if (= n (float (fix n)))
+      (fix n)
+      (fix (1- n))
+    )
+  )
+)
+
+
 ;; ==========================================
-;; [1] ìœ í‹¸ë¦¬í‹° í•¨ìˆ˜
+;; [1] À¯Æ¿¸®Æ¼ ÇÔ¼ö
 ;; ==========================================
 
-;; ë ˆì´ì–´ ìƒì„± ë° ìƒ‰ìƒ ì„¤ì •
+;; ·¹ÀÌ¾î »ı¼º ¹× »ö»ó ¼³Á¤
 (defun util:ensure-layer (layname color)
   (if (not (tblsearch "LAYER" layname))
     (command "_.layer" "_make" layname "_color" color layname "_ltype" "Continuous" layname "")
   )
 )
 
-;; ê°ì²´ë“¤ì˜ í†µí•© ë²”ìœ„(Bounding Box) ê³„ì‚°
+;; °´Ã¼µéÀÇ ÅëÇÕ ¹üÀ§(Bounding Box) °è»ê
 (defun util:get-extent (ss / i ent obj minpt maxpt all-min all-max)
   (setq i 0)
   (repeat (sslength ss)
@@ -35,7 +47,7 @@
   (list all-min all-max)
 )
 
-;; ì‚¬ê°í˜• ë„ê³½ ê·¸ë¦¬ê¸° (LWPOLYLINE)
+;; »ç°¢Çü µµ°û ±×¸®±â (LWPOLYLINE)
 (defun util:draw-rect (p1 p2 layname)
   (entmake 
     (list 
@@ -54,7 +66,7 @@
 )
 
 ;; ==========================================
-;; [2] í•µì‹¬ ë„ê³½ ìƒì„± ì—”ì§„
+;; [2] ÇÙ½É ¿¬»ê ¿£Áø
 ;; ==========================================
 
 (defun fn:create-map-index (scale / doc origin-x origin-y cell-w cell-h 
@@ -64,7 +76,7 @@
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
   (vla-StartUndoMark doc)
 
-  ;; ì„¤ì •ê°’ (ë‹¨ìœ„: m)
+  ;; ¿øÁ¡ (´ÜÀ§: m)
   (setq origin-x 200000.0
         origin-y 600000.0)
   
@@ -73,27 +85,27 @@
     (setq cell-w 400.0 cell-h 300.0) ; 1:1000 (400mm * 1.0 = 400m)
   )
 
-  ;; 1. ì…ë ¥ ëª¨ë“œ ì„ íƒ (ê°ì²´ ì„ íƒ ë˜ëŠ” ìœˆë„ìš° ë²”ìœ„)
+  ;; 1. ÀÔ·Â ¿µ¿ª ¼³Á¤ (À©µµ¿ì ¶Ç´Â °´Ã¼ ¼±ÅÃ)
   (initget "Object Window")
-  (setq mode (getkword "\në²”ìœ„ ì§€ì • ë°©ë²• ì„ íƒ [ê°ì²´(O)/ìœˆë„ìš°(W)] <ìœˆë„ìš°>: "))
+  (setq mode (getkword "\nµµ°û »ı¼º ¹æ½Ä ¼±ÅÃ [°´Ã¼(O)/À©µµ¿ì(W)] <À©µµ¿ì>: "))
   (if (or (= mode "") (not mode)) (setq mode "Window"))
 
   (if (= mode "Window")
     (progn
-      (princ "\n--- ìœˆë„ìš°(W) ë²”ìœ„ ì§€ì • ëª¨ë“œ ---")
-      (setq p1 (getpoint "\nì²« ë²ˆì§¸ êµ¬ì„ ì§€ì  í´ë¦­: "))
-      (setq p2 (getcorner p1 "\në°˜ëŒ€ìª½ êµ¬ì„ ì§€ì  í´ë¦­: "))
+      (princ "\n--- À©µµ¿ì(W) ¸ğµå ½ÇÇà ---")
+      (setq p1 (getpoint "\nÃ¹ ¹øÂ° ±¸¼® Å¬¸¯: "))
+      (setq p2 (getcorner p1 "\n¹İ´ëÂÊ ±¸¼® Å¬¸¯: "))
       (setq min-x (min (car p1) (car p2))
             min-y (min (cadr p1) (cadr p2))
             max-x (max (car p1) (car p2))
             max-y (max (cadr p1) (cadr p2)))
     )
     (progn
-      (princ "\n--- ê°ì²´ ì„ íƒ(O) ëª¨ë“œ (ë‹¤ì¤‘ ì„ íƒ ê°€ëŠ¥) ---")
-      (princ "\në„ê³½ ì˜ì—­ì„ ê³„ì‚°í•  ê°ì²´ë“¤ì„ ì„ íƒí•˜ê³  ì—”í„°ë¥¼ ëˆ„ë¥´ì„¸ìš”...")
+      (princ "\n--- °´Ã¼ ¼±ÅÃ(O) ¸ğµå (Æ÷ÇÔµÈ Ä­¸¸ »ı¼º) ---")
+      (princ "\nµµ°û ¿µ¿ªÀ» °è»êÇÒ °´Ã¼µéÀ» ¼±ÅÃÇÏ°í ¿£ÅÍ¸¦ ´©¸£¼¼¿ä...")
       (setq ss (ssget))
       (if (not ss) 
-        (progn (princ "\nì„ íƒëœ ê°ì²´ê°€ ì—†ì–´ ì¤‘ë‹¨í•©ë‹ˆë‹¤.") (exit))
+        (progn (princ "\n¼±ÅÃµÈ °´Ã¼°¡ ¾ø¾î Áß´ÜÇÕ´Ï´Ù.") (exit))
       )
       (setq extent (util:get-extent ss))
       (setq min-x (car (car extent))
@@ -103,13 +115,13 @@
     )
   )
 
-  ;; 2. ê·¸ë¦¬ë“œ ì¸ë±ìŠ¤ ê³„ì‚°
-  (setq start-col (fix (floor (/ (- min-x origin-x) cell-w)))
-        end-col   (fix (floor (/ (- max-x origin-x) cell-w)))
-        start-row (fix (floor (/ (- min-y origin-y) cell-h)))
-        end-row   (fix (floor (/ (- max-y origin-y) cell-h))))
+  ;; 2. ±×¸®µå ÀÎµ¦½º °è»ê
+  (setq start-col (fix (util:floor (/ (- min-x origin-x) cell-w)))
+        end-col   (fix (util:floor (/ (- max-x origin-x) cell-w)))
+        start-row (fix (util:floor (/ (- min-y origin-y) cell-h)))
+        end-row   (fix (util:floor (/ (- max-y origin-y) cell-h))))
 
-  ;; 3. ë„ê³½ ìƒì„±
+  ;; 3. µµ°û »ı¼º
   (util:ensure-layer "dokwag" 1) ; Red
   (setq count 0)
   (setq i start-col)
@@ -124,9 +136,9 @@
       
       (setq found-in-cell nil)
       (if (= mode "Window")
-        (setq found-in-cell T) ; ìœˆë„ìš° ëª¨ë“œëŠ” ì „ì²´ ìƒì„±
+        (setq found-in-cell T) ; À©µµ¿ì ¸ğµå´Â ÀüÃ¼ »ı¼º
         (progn
-          ;; ê°ì²´ ì„ íƒ ëª¨ë“œ: í˜„ì¬ ì¹¸(p1, p2)ì— ì´ˆê¸° ì„ íƒ ê°ì²´(ss)ê°€ í¬í•¨ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸
+          ;; °´Ã¼ ¼±ÅÃ ¸ğµå: ÇöÀç Ä­(p1, p2)¿¡ ÃÊ±â ¼±ÅÃ °´Ã¼(ss)°¡ Æ÷ÇÔµÇ¾î ÀÖ´ÂÁö È®ÀÎ
           (setq cell-ss (ssget "_C" p1 p2))
           (if cell-ss
             (progn
@@ -144,7 +156,7 @@
         )
       )
 
-      ;; êµì°¨í•˜ëŠ” ê°ì²´ê°€ ìˆê±°ë‚˜ ìœˆë„ìš° ëª¨ë“œì¸ ê²½ìš°ì—ë§Œ ìƒì„±
+      ;; ±³Â÷ÇÏ´Â °´Ã¼°¡ ÀÖ°Å³ª À©µµ¿ì ¸ğµåÀÎ °æ¿ì¿¡¸¸ »ı¼º
       (if found-in-cell
         (progn
           (util:draw-rect p1 p2 "dokwag")
@@ -157,16 +169,16 @@
   )
 
   (vla-EndUndoMark doc)
-  (princ (strcat "\nì™„ë£Œ: " (itoa count) "ê°œì˜ ë„ê³½ì´ 'dokwag' ë ˆì´ì–´ì— ìƒì„±ë˜ì—ˆìŠµë‹ˆë‹¤."))
+  (princ (strcat "\n¿Ï·á: " (itoa count) "°³ÀÇ µµ°ûÀÌ 'dokwag' ·¹ÀÌ¾î¿¡ »ı¼ºµÇ¾ú½À´Ï´Ù."))
   (princ)
 )
 
 ;; ==========================================
-;; [3] ì§„ì… ëª…ë ¹ì–´
+;; [3] ¸ŞÀÎ ¸í·É¾î
 ;; ==========================================
 
-(defun C:WD500 () (fn:create-map-index 500))
-(defun C:WD1000 () (fn:create-map-index 1000))
+(defun C:MAPINDEX_500 () (fn:create-map-index 500))
+(defun C:MAPINDEX_1000 () (fn:create-map-index 1000))
 
-(princ "\në„ê³½ ìƒì„± ë„êµ¬ ë¡œë“œ ì™„ë£Œ.")
+(princ "\nµµ°û »ı¼º µµ±¸ ·Îµå ¿Ï·á.")
 (princ)

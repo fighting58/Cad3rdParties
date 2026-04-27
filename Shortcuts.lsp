@@ -1,76 +1,81 @@
 ;;; Shortcuts.lsp
-;;; ì§€ì—° ë¡œë”©(Lazy Loading) ë°©ì‹ì˜ ë‹¨ì¶• ëª…ë ¹ì–´ ì„¤ì •
+;;; Áö¿¬ ·Îµù(Lazy Loading) ¹æ½ÄÀÇ ´ÜÃà ¸í·É¾î ¼³Á¤
 
 (vl-load-com)
 
-;; [ì§€ì—° ë¡œë”© ìœ í‹¸ë¦¬í‹°]
-;; ìºë“œ ì§€ì› í´ë”(Support Path)ì— íŒŒì¼ì´ ìˆëŠ” ê²½ìš° íŒŒì¼ëª…ë§Œìœ¼ë¡œ ë¡œë“œí•©ë‹ˆë‹¤.
-(defun util:lazy-load (file-name cmd-sym)
+;; [Áö¿¬ ·Îµù À¯Æ¿¸®Æ¼]
+(defun util:lazy-load (file-name cmd-sym / full-path)
+  ;; 1. ÆÄÀÏ Ã£±â (Á÷Á¢ ¶Ç´Â lisp-src/ °æ·Î Ãß°¡)
+  (setq full-path (findfile file-name))
+  (if (not full-path)
+    (setq full-path (findfile (strcat "lisp-src/" file-name)))
+  )
+
+  ;; 2. ÆÄÀÏ ·Îµå
   (if (not (eval cmd-sym))
-    (progn
-      (if (findfile file-name)
-        (load file-name)
-        (princ (strcat "\nì˜¤ë¥˜: ì§€ì› í´ë”ì—ì„œ '" file-name "' íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤."))
-      )
+    (if full-path
+      (load full-path)
+      (princ (strcat "\n¿À·ù: '" file-name "' ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù. (Áö¿ø °æ·Î È®ÀÎ ¿ä¸Á)"))
     )
   )
-  ;; ë¡œë“œ í›„ ëª…ë ¹ì–´ê°€ ì¡´ì¬í•˜ë©´ ì‹¤í–‰
+
+  ;; 3. ¸í·É¾î ½ÇÇà
   (if (eval cmd-sym)
     (apply (eval cmd-sym) nil)
-    (princ (strcat "\nì˜¤ë¥˜: '" (vl-princ-to-string cmd-sym) "' ëª…ë ¹ì–´ë¥¼ ì‹¤í–‰í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤."))
+    (princ (strcat "\n¿À·ù: '" (vl-princ-to-string cmd-sym) "' ¸í·É¾î¸¦ ½ÇÇàÇÒ ¼ö ¾ø½À´Ï´Ù."))
   )
   (princ)
 )
 
-;; 1. REFPOLY ê´€ë ¨
-(defun C:F2P () (util:lazy-load "REFPOLY.lsp" 'c:REFPOLY_CW))
-(defun C:F3P () (util:lazy-load "REFPOLY.lsp" 'c:REFPOLY_CCW))
+;; 1. REFPOLY °ü·Ã
+(defun C:F2P () (util:lazy-load "lisp-src/REFPOLY.lsp" 'c:REFPOLY_CW))
+(defun C:F3P () (util:lazy-load "lisp-src/REFPOLY.lsp" 'c:REFPOLY_CCW))
 
-;; 2. ODLabel ê´€ë ¨
-(defun C:ODL () (util:lazy-load "ODLabel.lsp" 'c:ODLABEL))
+;; 2. ODLabel °ü·Ã
+(defun C:ODL () (util:lazy-load "lisp-src/ODLabel.lsp" 'c:ODLABEL))
 
-;; 3. AreaAdjust ê´€ë ¨
-(defun C:AFO  () (util:lazy-load "AreaAdjust.lsp" 'c:AREA_ADJUST))
-(defun C:AFO2 () (util:lazy-load "AreaAdjust.lsp" 'c:AREA_ADJUST_FIXED))
+;; 3. AreaAdjust °ü·Ã
+(defun C:AFO  () (util:lazy-load "lisp-src/AreaAdjust.lsp" 'c:AREA_ADJUST))
+(defun C:AFO2 () (util:lazy-load "lisp-src/AreaAdjust.lsp" 'c:AREA_ADJUST_FIXED))
 
-;; 4. ìœ í‹¸ë¦¬í‹° ê´€ë ¨
-(defun C:PNC  () (util:lazy-load "ParcelSplit.lsp" 'c:PARCEL_SPLIT))
-(defun C:WD500 () (util:lazy-load "MapIndex.lsp" 'c:WD500))
-(defun C:WD1000() (util:lazy-load "MapIndex.lsp" 'c:WD1000))
-(defun C:INC  () (util:lazy-load "IncrementNumber.lsp" 'c:INCREMENTNUMBER))
-(defun C:OB   () (util:lazy-load "OuterBoundary.lsp" 'c:OUTERBOUNDARY))
-(defun C:A2P  () (util:lazy-load "ArcToPolyline.lsp" 'c:ARCTOPOLYLINE))
-(defun C:OSA2 () (util:lazy-load "CoordRound.lsp" 'c:OSA2))
-(defun C:OSA3 () (util:lazy-load "CoordRound.lsp" 'c:OSA3))
-(defun C:VAD  () (util:lazy-load "VertexEdit.lsp" 'c:VERTEX_ADD))
-(defun C:VDE  () (util:lazy-load "VertexEdit.lsp" 'c:VERTEX_DEL))
+;; 4. À¯Æ¿¸®Æ¼ °ü·Ã
+(defun C:PNC  () (util:lazy-load "lisp-src/ParcelSplit.lsp" 'c:PARCEL_SPLIT))
+(defun C:WD5 () (util:lazy-load "lisp-src/MapIndex.lsp" 'c:MAPINDEX_500))
+(defun C:WD10() (util:lazy-load "lisp-src/MapIndex.lsp" 'c:MAPINDEX_1000))
+(defun C:INC  () (util:lazy-load "lisp-src/IncrementNumber.lsp" 'c:INCREMENTNUMBER))
+(defun C:OB   () (util:lazy-load "lisp-src/OuterBoundary.lsp" 'c:OUTERBOUNDARY))
+(defun C:A2P  () (util:lazy-load "lisp-src/ArcToPolyline.lsp" 'c:ARCTOPOLYLINE))
+(defun C:OSA2 () (util:lazy-load "lisp-src/CoordRound.lsp" 'c:OSA2))
+(defun C:OSA3 () (util:lazy-load "lisp-src/CoordRound.lsp" 'c:OSA3))
+(defun C:VAD  () (util:lazy-load "lisp-src/VertexEdit.lsp" 'c:VERTEX_ADD))
+(defun C:VDE  () (util:lazy-load "lisp-src/VertexEdit.lsp" 'c:VERTEX_DEL))
 
-;; 5. ë„ì›€ë§ ëª…ë ¹ì–´
+;; 5. µµ¿ò¸» ¸í·É¾î
 (defun C:APPHELP ()
   (princ "\n============================================")
   (princ "\n [CAD 3rd Party Tools] ")
-  (princ "\n - Version: 1.0.0 (2026-04-26)")
+  (princ "\n - Version: 1.0.4 (2026-04-27)")
   (princ "\n - Developer: LX Kim Byoung-woo")
   (princ "\n============================================")
-  (princ "\n  F2P  - REFPOLY_CW - ì‹œê³„ ë°©í–¥(CW) êµ¬ê°„ êµì²´")
-  (princ "\n  F3P  - REFPOLY_CCW - ë°˜ì‹œê³„ ë°©í–¥(CCW) êµ¬ê°„ êµì²´")
-  (princ "\n  ODL  - ODLABEL - OD ë°ì´í„° ë ˆì´ë¸” ìƒì„±")
-  (princ "\n  AFO  - AREA_ADJUST - ë©´ì  ì •ë°€ ì¡°ì • (êµ¬ê°„ ì´ë™)")
-  (princ "\n  AFO2 - AREA_ADJUST_FIXED - ë©´ì  ì •ë°€ ì¡°ì • (ê³ ì •ì  ìœ ì§€)")
-  (princ "\n  PNC  - PARCEL_SPLIT - ì§€ë²ˆ ë ˆì´ì–´ ë¶„í•´ ë° ë¶„ë¦¬")
-  (princ "\n  WD5  - WD500 - ë„ê³½ ìƒì„± (ì¶•ì²™ 1:500)")
-  (princ "\n  WD10 - WD1000 - ë„ê³½ ìƒì„± (ì¶•ì²™ 1:1000)")
-  (princ "\n  INC  - INCREMENTNUMBER - ìˆ«ì ìë™ ì¦ê°€ ì…ë ¥")
-  (princ "\n  OB   - OUTERBOUNDARY - ì™¸ê³½ì„  ì¶”ì¶œ")
-  (princ "\n  A2P  - ARCTOPOLYLINE - í˜¸(Arc)ë¥¼ ì„ ë¶„ í´ë¦¬ë¼ì¸ìœ¼ë¡œ ë³€í™˜")
-  (princ "\n  OSA2 - OSA2 - ì¢Œí‘œ ì˜¤ì‚¬ì˜¤ì… ì¬ê²°ì • (ì†Œìˆ˜ 2ìë¦¬)")
-  (princ "\n  OSA3 - OSA3 - ì¢Œí‘œ ì˜¤ì‚¬ì˜¤ì… ì¬ê²°ì • (ì†Œìˆ˜ 3ìë¦¬)")
-  (princ "\n  VAD  - VERTEX_ADD - ì •ì  ì¶”ê°€")
-  (princ "\n  VDE  - VERTEX_DEL - ì •ì  ì‚­ì œ")
+  (princ "\n  F2P  - REFPOLY_CW - ½Ã°è ¹æÇâ(CW) ±¸°£ ±³Ã¼")
+  (princ "\n  F3P  - REFPOLY_CCW - ¹İ½Ã°è ¹æÇâ(CCW) ±¸°£ ±³Ã¼")
+  (princ "\n  ODL  - ODLABEL - OD µ¥ÀÌÅÍ ·¹ÀÌºí »ı¼º")
+  (princ "\n  AFO  - AREA_ADJUST - ¸éÀû Á¤¹Ğ Á¶Á¤ (±¸°£ ÀÌµ¿)")
+  (princ "\n  AFO2 - AREA_ADJUST_FIXED - ¸éÀû Á¤¹Ğ Á¶Á¤ (°íÁ¤Á¡ À¯Áö)")
+  (princ "\n  PNC  - PARCEL_SPLIT - Áö¹ø ·¹ÀÌ¾î ºĞÇØ ¹× ºĞ¸®")
+  (princ "\n  WD5  - MAPINDEX_500 - µµ°û »ı¼º (ÃàÃ´ 1:500)")
+  (princ "\n  WD10 - MAPINDEX_1000 - µµ°û »ı¼º (ÃàÃ´ 1:1000)")
+  (princ "\n  INC  - INCREMENTNUMBER - ¼ıÀÚ ÀÚµ¿ Áõ°¡ ÀÔ·Â")
+  (princ "\n  OB   - OUTERBOUNDARY - ¿Ü°û¼± ÃßÃâ")
+  (princ "\n  A2P  - ARCTOPOLYLINE - È£(Arc)¸¦ ¼±ºĞ Æú¸®¶óÀÎÀ¸·Î º¯È¯")
+  (princ "\n  OSA2 - OSA2 - ÁÂÇ¥ ¿À»ç¿ÀÀÔ Àç°áÁ¤ (¼Ò¼ö 2ÀÚ¸®)")
+  (princ "\n  OSA3 - OSA3 - ÁÂÇ¥ ¿À»ç¿ÀÀÔ Àç°áÁ¤ (¼Ò¼ö 3ÀÚ¸®)")
+  (princ "\n  VAD  - VERTEX_ADD - Á¤Á¡ Ãß°¡")
+  (princ "\n  VDE  - VERTEX_DEL - Á¤Á¡ »èÁ¦")
   (princ "\n--------------------------------------------")
-  (princ "\n* ëª¨ë“  ê¸°ëŠ¥ì€ ì²« ì‹¤í–‰ ì‹œ ìë™ìœ¼ë¡œ ë¡œë“œë©ë‹ˆë‹¤.")
+  (princ "\n* ¸ğµç ±â´ÉÀº Ã¹ ½ÇÇà ½Ã ÀÚµ¿À¸·Î ·ÎµåµË´Ï´Ù.")
   (princ)
 )
 
-(princ "\nëª¨ë“  ê¸°ëŠ¥ì´ ë¡œë“œë˜ì—ˆìŠµë‹ˆë‹¤. ë„ì›€ë§ì€ 'APPHELP'ë¥¼ ì…ë ¥í•˜ì„¸ìš”.")
+(princ "\n¸ğµç ±â´ÉÀÌ ·ÎµåµÇ¾ú½À´Ï´Ù. µµ¿ò¸»Àº 'APPHELP'¸¦ ÀÔ·ÂÇÏ¼¼¿ä.")
 (princ)

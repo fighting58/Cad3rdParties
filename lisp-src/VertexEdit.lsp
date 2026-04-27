@@ -1,25 +1,25 @@
-;;; ì •ì  ì¶”ê°€ ë° ì‚­ì œ ë„êµ¬ (VertexEdit)
-;;; AutoCAD Map 3D 2013 ë° Windows 11 í™˜ê²½ ìµœì í™”
-;;; ì„ íƒëœ ê°ì²´ì˜ ì •ì ì„ ì§ì ‘ ì¶”ê°€í•˜ê±°ë‚˜ ì‚­ì œí•©ë‹ˆë‹¤.
+;;; Á¤Á¡ Ãß°¡ ¹× »èÁ¦ µµ±¸ (VertexEdit)
+;;; AutoCAD Map 3D 2013 ¹× Windows 11 È¯°æ ÃÖÀûÈ­
+;;; ¼±ÅÃµÈ °´Ã¼ÀÇ Á¤Á¡À» Á÷Á¢ Ãß°¡ÇÏ°Å³ª »èÁ¦ÇÕ´Ï´Ù.
 ;;; 
-;;; [ì‚¬ìš©ì ìš”ì²­ ì˜ˆì™¸]:
-;;; - Rule 3(ì›ë³¸ ë³´ì¡´) ëŒ€ì‹  ê°ì²´ë¥¼ ì¦‰ì‹œ ìˆ˜ì •í•˜ë„ë¡ êµ¬í˜„ë¨.
-;;; - ëª¨ë“  ìƒí˜¸ì‘ìš©ì€ ëª…ë ¹í–‰ í”„ë¡¬í”„íŠ¸ ì‚¬ìš©.
+;;; [»ç¿ëÀÚ ¿äÃ» ¿¹¿Ü]:
+;;; - Rule 3(¿øº» º¸Á¸) ´ë½Å °´Ã¼¸¦ Áï½Ã ¼öÁ¤ÇÏµµ·Ï ±¸ÇöµÊ.
+;;; - ¸ğµç »óÈ£ÀÛ¿ëÀº ¸í·ÉÇà ÇÁ·ÒÇÁÆ® »ç¿ë.
 
 (vl-load-com)
 
 ;; ==========================================
-;; [1] ì •ì  ì¶”ê°€ (C:VERTEX_ADD)
+;; [1] Á¤Á¡ Ãß°¡ (C:VERTEX_ADD)
 ;; ==========================================
 
 (defun C:VERTEX_ADD (/ *error* ent data type p p_on_curve param idx coords new_coords i vla_obj acDoc old_cmdecho)
   (setq acDoc (vla-get-activedocument (vlax-get-acad-object)))
   (vla-startundomark acDoc)
 
-  ;; ì—ëŸ¬ í•¸ë“¤ëŸ¬
+  ;; ¿¡·¯ ÇÚµé·¯
   (defun *error* (msg)
     (if (not (member msg '("Function cancelled" "quit / exit abort")))
-      (princ (strcat "\nì˜¤ë¥˜: " msg))
+      (princ (strcat "\n¿À·ù: " msg))
     )
     (if old_cmdecho (setvar "CMDECHO" old_cmdecho))
     (vla-endundomark acDoc)
@@ -29,15 +29,15 @@
   (setq old_cmdecho (getvar "CMDECHO"))
   (setvar "CMDECHO" 0)
 
-  (princ "\nì •ì  ì¶”ê°€ ë„êµ¬ [VA]")
+  (princ "\nÁ¤Á¡ Ãß°¡ µµ±¸ [VA]")
   
-  (setq ent (car (entsel "\nìˆ˜ì •í•  ê°ì²´(Line/LWPolyline) ì„ íƒ: ")))
-  (if (not ent) (progn (princ "\nì„ íƒëœ ê°ì²´ê°€ ì—†ìŠµë‹ˆë‹¤.") (exit)))
+  (setq ent (car (entsel "\n¼öÁ¤ÇÒ °´Ã¼(Line/LWPolyline) ¼±ÅÃ: ")))
+  (if (not ent) (progn (princ "\n¼±ÅÃµÈ °´Ã¼°¡ ¾ø½À´Ï´Ù.") (exit)))
 
   (setq data (entget ent))
   (setq type (cdr (assoc 0 data)))
 
-  ;; 1. Lineì¸ ê²½ìš° LWPolylineìœ¼ë¡œ ë³€í™˜
+  ;; 1. LineÀÎ °æ¿ì LWPolylineÀ¸·Î º¯È¯
   (if (= type "LINE")
     (progn
       (command "_.pedit" ent "_Y" "_X")
@@ -47,22 +47,22 @@
   )
 
   (if (/= type "LWPOLYLINE")
-    (progn (princ "\nì§€ì›í•˜ì§€ ì•ŠëŠ” ê°ì²´ íƒ€ì…ì…ë‹ˆë‹¤.") (exit))
+    (progn (princ "\nÁö¿øÇÏÁö ¾Ê´Â °´Ã¼ Å¸ÀÔÀÔ´Ï´Ù.") (exit))
   )
 
   (setq vla_obj (vlax-ename->vla-object ent))
 
-  ;; 2. ì—°ì† ì •ì  ì¶”ê°€ ë£¨í”„
-  (while (setq p (getpoint "\nì¶”ê°€í•  ì •ì  ìœ„ì¹˜ í´ë¦­ (ì¢…ë£Œ: Enter): "))
+  ;; 2. ¿¬¼Ó Á¤Á¡ Ãß°¡ ·çÇÁ
+  (while (setq p (getpoint "\nÃß°¡ÇÒ Á¤Á¡ À§Ä¡ Å¬¸¯ (Á¾·á: Enter): "))
     (setq p_on_curve (vlax-curve-getClosestPointTo vla_obj p))
     (setq param (vlax-curve-getParamAtPoint vla_obj p_on_curve))
     
-    ;; ì‚½ì…ë  ì¸ë±ìŠ¤ ê³„ì‚° (paramì´ 1.5ì´ë©´ 2ë²ˆ ì¸ë±ìŠ¤ì— ì‚½ì…)
+    ;; »ğÀÔµÉ ÀÎµ¦½º °è»ê (paramÀÌ 1.5ÀÌ¸é 2¹ø ÀÎµ¦½º¿¡ »ğÀÔ)
     (setq idx (fix (1+ param)))
     
     (setq coords (vlax-get vla_obj 'Coordinates))
     
-    ;; ìƒˆë¡œìš´ ì¢Œí‘œ ë¦¬ìŠ¤íŠ¸ ìƒì„±
+    ;; »õ·Î¿î ÁÂÇ¥ ¸®½ºÆ® »ı¼º
     (setq new_coords nil)
     (setq i 0)
     (repeat (/ (length coords) 2)
@@ -73,33 +73,33 @@
       (setq i (1+ i))
     )
     
-    ;; ë§ˆì§€ë§‰ì— ì¶”ê°€ë˜ëŠ” ê²½ìš° ì²˜ë¦¬
+    ;; ¸¶Áö¸·¿¡ Ãß°¡µÇ´Â °æ¿ì Ã³¸®
     (if (>= idx (/ (length coords) 2))
       (setq new_coords (append new_coords (list (car p_on_curve) (cadr p_on_curve))))
     )
 
     (vlax-put vla_obj 'Coordinates new_coords)
-    (princ "\nì •ì ì´ ì¶”ê°€ë˜ì—ˆìŠµë‹ˆë‹¤.")
+    (princ "\nÁ¤Á¡ÀÌ Ãß°¡µÇ¾ú½À´Ï´Ù.")
   )
 
   (setvar "CMDECHO" old_cmdecho)
   (vla-endundomark acDoc)
-  (princ "\nì •ì  ì¶”ê°€ë¥¼ ì¢…ë£Œí•©ë‹ˆë‹¤.")
+  (princ "\nÁ¤Á¡ Ãß°¡¸¦ Á¾·áÇÕ´Ï´Ù.")
   (princ)
 )
 
 ;; ==========================================
-;; [2] ì •ì  ì‚­ì œ (C:VERTEX_DEL)
+;; [2] Á¤Á¡ »èÁ¦ (C:VERTEX_DEL)
 ;; ==========================================
 
 (defun C:VERTEX_DEL (/ *error* ent data type p coords new_coords i dist min_dist min_idx vla_obj acDoc old_osmode old_cmdecho pt)
   (setq acDoc (vla-get-activedocument (vlax-get-acad-object)))
   (vla-startundomark acDoc)
 
-  ;; ì—ëŸ¬ í•¸ë“¤ëŸ¬
+  ;; ¿¡·¯ ÇÚµé·¯
   (defun *error* (msg)
     (if (not (member msg '("Function cancelled" "quit / exit abort")))
-      (princ (strcat "\nì˜¤ë¥˜: " msg))
+      (princ (strcat "\n¿À·ù: " msg))
     )
     (if old_osmode (setvar "OSMODE" old_osmode))
     (if old_cmdecho (setvar "CMDECHO" old_cmdecho))
@@ -110,27 +110,27 @@
   (setq old_osmode (getvar "OSMODE"))
   (setq old_cmdecho (getvar "CMDECHO"))
   (setvar "CMDECHO" 0)
-  (setvar "OSMODE" 1) ;; Endpoint OSNAP í™œì„±í™”
+  (setvar "OSMODE" 1) ;; Endpoint OSNAP È°¼ºÈ­
 
-  (princ "\nì •ì  ì‚­ì œ ë„êµ¬ [VD]")
+  (princ "\nÁ¤Á¡ »èÁ¦ µµ±¸ [VD]")
 
-  (setq ent (car (entsel "\nìˆ˜ì •í•  LWPolyline ì„ íƒ: ")))
-  (if (not ent) (progn (princ "\nì„ íƒëœ ê°ì²´ê°€ ì—†ìŠµë‹ˆë‹¤.") (exit)))
+  (setq ent (car (entsel "\n¼öÁ¤ÇÒ LWPolyline ¼±ÅÃ: ")))
+  (if (not ent) (progn (princ "\n¼±ÅÃµÈ °´Ã¼°¡ ¾ø½À´Ï´Ù.") (exit)))
 
   (setq data (entget ent))
   (setq type (cdr (assoc 0 data)))
 
   (if (/= type "LWPOLYLINE")
-    (progn (princ "\nLWPolylineë§Œ ì§€ì›í•©ë‹ˆë‹¤.") (exit))
+    (progn (princ "\nLWPolyline¸¸ Áö¿øÇÕ´Ï´Ù.") (exit))
   )
 
   (setq vla_obj (vlax-ename->vla-object ent))
 
-  ;; 2. ì—°ì† ì •ì  ì‚­ì œ ë£¨í”„
-  (while (setq p (getpoint "\nì‚­ì œí•  ì •ì  í´ë¦­ (ì¢…ë£Œ: Enter): "))
+  ;; 2. ¿¬¼Ó Á¤Á¡ »èÁ¦ ·çÇÁ
+  (while (setq p (getpoint "\n»èÁ¦ÇÒ Á¤Á¡ Å¬¸¯ (Á¾·á: Enter): "))
     (setq coords (vlax-get vla_obj 'Coordinates))
     
-    ;; ìµœì†Œ ê±°ë¦¬ ì •ì  íƒìƒ‰
+    ;; ÃÖ¼Ò °Å¸® Á¤Á¡ Å½»ö
     (setq min_dist 1e9)
     (setq min_idx -1)
     (setq i 0)
@@ -143,12 +143,12 @@
       (setq i (1+ i))
     )
 
-    ;; Tolerance 0.005 ì²´í¬
+    ;; Tolerance 0.005 Ã¼Å©
     (if (<= min_dist 0.005)
       (progn
-        ;; ì •ì ì´ 2ê°œ ì´í•˜ì´ë©´ ì‚­ì œ ë¶ˆê°€
+        ;; Á¤Á¡ÀÌ 2°³ ÀÌÇÏÀÌ¸é »èÁ¦ ºÒ°¡
         (if (<= (/ (length coords) 2) 2)
-          (princ "\nì˜¤ë¥˜: ì •ì ì´ 2ê°œ ì´í•˜ì¸ ê°ì²´ëŠ” ì •ì ì„ ì‚­ì œí•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.")
+          (princ "\n¿À·ù: Á¤Á¡ÀÌ 2°³ ÀÌÇÏÀÎ °´Ã¼´Â Á¤Á¡À» »èÁ¦ÇÒ ¼ö ¾ø½À´Ï´Ù.")
           (progn
             (setq new_coords nil)
             (setq i 0)
@@ -159,20 +159,20 @@
               (setq i (1+ i))
             )
             (vlax-put vla_obj 'Coordinates new_coords)
-            (princ (strcat "\n" (itoa (1+ min_idx)) "ë²ˆ ì •ì ì´ ì‚­ì œë˜ì—ˆìŠµë‹ˆë‹¤."))
+            (princ (strcat "\n" (itoa (1+ min_idx)) "¹ø Á¤Á¡ÀÌ »èÁ¦µÇ¾ú½À´Ï´Ù."))
           )
         )
       )
-      (princ "\nì¼ì¹˜í•˜ëŠ” ì •ì ì„ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. (Tolerance: 0.005)")
+      (princ "\nÀÏÄ¡ÇÏ´Â Á¤Á¡À» Ã£Áö ¸øÇß½À´Ï´Ù. (Tolerance: 0.005)")
     )
   )
 
   (setvar "OSMODE" old_osmode)
   (setvar "CMDECHO" old_cmdecho)
   (vla-endundomark acDoc)
-  (princ "\nì •ì  ì‚­ì œë¥¼ ì¢…ë£Œí•©ë‹ˆë‹¤.")
+  (princ "\nÁ¤Á¡ »èÁ¦¸¦ Á¾·áÇÕ´Ï´Ù.")
   (princ)
 )
 
-(princ "\nì •ì  í¸ì§‘ ë„êµ¬ ë¡œë“œ ì™„ë£Œ.")
+(princ "\nÁ¤Á¡ ÆíÁı µµ±¸ ·Îµå ¿Ï·á.")
 (princ)

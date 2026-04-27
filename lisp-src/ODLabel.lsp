@@ -1,14 +1,14 @@
 ;;; ODLabel.lsp
-;;; LWPOLYLINEì˜ ODê°’ì„ ì½ì–´ ì‹œê°ì  ì¤‘ì‹¬(Polylabel)ì— ìµœì ì˜ ê°ë„ë¡œ ë ˆì´ë¸” ìƒì„±
-;;; AutoCAD Map 3D 2013 ì „ìš©
+;;; LWPOLYLINEÀÇ OD°ªÀ» ÀĞ¾î ½Ã°¢Àû Áß½É(Polylabel)¿¡ ÃÖÀûÀÇ °¢µµ·Î ·¹ÀÌºí »ı¼º
+;;; AutoCAD Map 3D 2013 Àü¿ë
 
 (vl-load-com)
 
 ;; ==========================================
-;; [1] ìœ í‹¸ë¦¬í‹° í•¨ìˆ˜
+;; [1] À¯Æ¿¸®Æ¼ ÇÔ¼ö
 ;; ==========================================
 
-;; ì •ì  ë¦¬ìŠ¤íŠ¸ ì¶”ì¶œ
+;; Á¤Á¡ ¸®½ºÆ® ÃßÃâ
 (defun util:get-poly-points (ent / pts)
   (foreach x (entget ent)
     (if (= (car x) 10) (setq pts (cons (cdr x) pts)))
@@ -16,7 +16,7 @@
   (reverse pts)
 )
 
-;; ì ì—ì„œ ì„ ë¶„ê¹Œì§€ì˜ ìµœë‹¨ ê±°ë¦¬
+;; Á¡¿¡¼­ ¼±ºĞ±îÁöÀÇ ÃÖ´Ü °Å¸®
 (defun util:dist-to-segment (p p1 p2 / dx dy t-param)
   (setq dx (- (car p2) (car p1))
         dy (- (cadr p2) (cadr p1)))
@@ -33,7 +33,7 @@
   )
 )
 
-;; ì ì´ í´ë¦¬ë¼ì¸ ë‚´ë¶€ì— ìˆëŠ”ì§€ í™•ì¸
+;; Á¡ÀÌ Æú¸®¶óÀÎ ³»ºÎ¿¡ ÀÖ´ÂÁö È®ÀÎ
 (defun util:is-inside (pt pts / i j inside p1 p2)
   (setq i 0 j (1- (length pts)) inside nil)
   (while (< i (length pts))
@@ -48,7 +48,7 @@
   inside
 )
 
-;; ì ì—ì„œ í´ë¦¬ë¼ì¸ ê²½ê³„ê¹Œì§€ì˜ ê±°ë¦¬
+;; Á¡¿¡¼­ Æú¸®¶óÀÎ °æ°è±îÁöÀÇ °Å¸®
 (defun util:dist-to-poly (pt pts / min-dist i p1 p2 d)
   (setq min-dist 1e12 i 0)
   (while (< i (length pts))
@@ -60,7 +60,7 @@
   (if (util:is-inside pt pts) min-dist (* -1.0 min-dist))
 )
 
-;; ì§ì„ (ì +ê°ë„)ê³¼ ì„ ë¶„(p1, p2)ì˜ êµì°¨ ê±°ë¦¬ ê³„ì‚°
+;; Á÷¼±(Á¡+°¢µµ)°ú ¼±ºĞ(p1, p2)ÀÇ ±³Â÷ °Å¸® °è»ê
 (defun util:intersect-ray-dist (pc ang p1 p2 / dx dy v1x v1y v2x v2y det t-param u-param)
   (setq v1x (cos ang) v1y (sin ang)
         v2x (- (car p2) (car p1)) v2y (- (cadr p2) (cadr p1))
@@ -75,12 +75,12 @@
   )
 )
 
-;; íŠ¹ì • ì§€ì ì—ì„œ ê°€ì¥ ê¸´ ë°©í–¥(ê°ë„) ì°¾ê¸°
+;; Æ¯Á¤ ÁöÁ¡¿¡¼­ °¡Àå ±ä ¹æÇâ(°¢µµ) Ã£±â
 (defun util:get-best-angle (pc pts / best-ang max-len ang i p1 p2 d len t-val)
   (setq best-ang 0.0 max-len 0.0 ang 0.0)
-  (repeat 18 ; 0~170ë„ íƒìƒ‰ (10ë„ ê°„ê²©)
+  (repeat 18 ; 0~170µµ Å½»ö (10µµ °£°İ)
     (setq len 0.0)
-    ;; ë‘ ë°©í–¥(ang, ang+PI)ìœ¼ë¡œì˜ ìµœë‹¨ êµì°¨ ê±°ë¦¬ í•©ì‚°
+    ;; µÎ ¹æÇâ(ang, ang+PI)À¸·ÎÀÇ ÃÖ´Ü ±³Â÷ °Å¸® ÇÕ»ê
     (foreach a (list ang (+ ang pi))
       (setq min-t 1e12 found nil i 0)
       (while (< i (length pts))
@@ -94,7 +94,7 @@
     (if (> len max-len) (setq max-len len best-ang ang))
     (setq ang (+ ang (/ pi 18.0)))
   )
-  ;; ê°€ë…ì„±ì„ ìœ„í•´ 90~270ë„ ì‚¬ì´ë©´ 180ë„ íšŒì „
+  ;; °¡µ¶¼ºÀ» À§ÇØ 90~270µµ »çÀÌ¸é 180µµ È¸Àü
   (if (and (> best-ang (/ pi 2.0)) (<= best-ang (/ (* 3.0 pi) 2.0)))
     (setq best-ang (- best-ang pi))
   )
@@ -102,7 +102,7 @@
 )
 
 ;; ==========================================
-;; [2] Polylabel ì—”ì§„ (Visual Center ì°¾ê¸°)
+;; [2] Polylabel ¿£Áø (Visual Center Ã£±â)
 ;; ==========================================
 
 (defun make-cell (x y size pts / d)
@@ -141,43 +141,43 @@
 )
 
 ;; ==========================================
-;; [3] ë©”ì¸ ëª…ë ¹ì–´
+;; [3] ¸ŞÀÎ ¸í·É¾î
 ;; ==========================================
 
 (defun C:ODLABEL (/ *error* ss i ent tables table field val center ang pts old-cmdecho doc)
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
   
   (defun *error* (msg)
-    (if (not (member msg '("Function cancelled" "quit / exit abort"))) (princ (strcat "\nì˜¤ë¥˜: " msg)))
+    (if (not (member msg '("Function cancelled" "quit / exit abort"))) (princ (strcat "\n¿À·ù: " msg)))
     (vla-EndUndoMark doc)
     (command "_.undo" "1")
-    (princ "\nì‘ì—…ì´ ì¤‘ë‹¨ë˜ì—ˆìŠµë‹ˆë‹¤.") (princ)
+    (princ "\nÀÛ¾÷ÀÌ Áß´ÜµÇ¾ú½À´Ï´Ù.") (princ)
   )
 
   (vla-StartUndoMark doc)
   (setq old-cmdecho (getvar "CMDECHO"))
   (setvar "CMDECHO" 0)
 
-  ;; 1. ê°ì²´ ì„ íƒ
-  (princ "\në ˆì´ë¸”ì„ ìƒì„±í•  í´ë¦¬ë¼ì¸ë“¤ì„ ì„ íƒí•˜ì„¸ìš”.")
+  ;; 1. °´Ã¼ ¼±ÅÃ
+  (princ "\n·¹ÀÌºíÀ» »ı¼ºÇÒ Æú¸®¶óÀÎµéÀ» ¼±ÅÃÇÏ¼¼¿ä.")
   (setq ss (ssget '((0 . "LWPOLYLINE"))))
-  (if (not ss) (progn (princ "\nì„ íƒëœ ê°ì²´ê°€ ì—†ìŠµë‹ˆë‹¤.") (exit)))
+  (if (not ss) (progn (princ "\n¼±ÅÃµÈ °´Ã¼°¡ ¾ø½À´Ï´Ù.") (exit)))
 
-  ;; 2. í•„ë“œ ì´ë¦„ ì…ë ¥
-  (setq field (getstring T "\nì¶œë ¥í•  í•„ë“œ ì´ë¦„ì„ ì…ë ¥í•˜ì„¸ìš” (ëª¨ë“  í…Œì´ë¸” ê²€ìƒ‰): "))
-  (if (= field "") (progn (princ "\ní•„ë“œ ì´ë¦„ì´ ì…ë ¥ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.") (exit)))
+  ;; 2. ÇÊµå ÀÌ¸§ ÀÔ·Â
+  (setq field (getstring T "\nÃâ·ÂÇÒ ÇÊµå ÀÌ¸§À» ÀÔ·ÂÇÏ¼¼¿ä (¸ğµç Å×ÀÌºí °Ë»ö): "))
+  (if (= field "") (progn (princ "\nÇÊµå ÀÌ¸§ÀÌ ÀÔ·ÂµÇÁö ¾Ê¾Ò½À´Ï´Ù.") (exit)))
 
-  ;; 3. ë£¨í”„ ì²˜ë¦¬
-  (princ (strcat "\n'" field "' í•„ë“œ ê²€ìƒ‰ ë° ë ˆì´ë¸” ìƒì„± ì¤‘..."))
+  ;; 3. ·çÇÁ Ã³¸®
+  (princ (strcat "\n'" field "' ÇÊµå °Ë»ö ¹× ·¹ÀÌºí »ı¼º Áß..."))
   (setq i 0 count 0)
   (repeat (sslength ss)
     (setq ent (ssname ss i))
     (setq val nil found-table nil)
     
-    ;; í˜„ì¬ ê°ì²´ì— ê²°í•©ëœ ëª¨ë“  í…Œì´ë¸” ëª©ë¡ ê°€ì ¸ì˜¤ê¸°
+    ;; ÇöÀç °´Ã¼¿¡ °áÇÕµÈ ¸ğµç Å×ÀÌºí ¸ñ·Ï °¡Á®¿À±â
     (setq tables (ade_odgettables ent))
     
-    ;; í…Œì´ë¸” ìˆœíšŒí•˜ë©° í•„ë“œ ì¡´ì¬ ì—¬ë¶€ í™•ì¸
+    ;; Å×ÀÌºí ¼øÈ¸ÇÏ¸ç ÇÊµå Á¸Àç ¿©ºÎ È®ÀÎ
     (if tables
       (foreach tbl tables
         (if (and (not found-table) (ade_odfielddefn tbl field))
@@ -186,7 +186,7 @@
             (if (and temp-val (/= (vl-princ-to-string temp-val) ""))
               (progn
                 (setq val (vl-princ-to-string temp-val))
-                (setq found-table tbl) ; ì²« ë²ˆì§¸ ë§¤ì¹­ë˜ëŠ” í…Œì´ë¸” ë°œê²¬ ì‹œ ì¤‘ë‹¨ìš©
+                (setq found-table tbl) ; Ã¹ ¹øÂ° ¸ÅÄªµÇ´Â Å×ÀÌºí ¹ß°ß ½Ã Áß´Ü¿ë
               )
             )
           )
@@ -194,17 +194,17 @@
       )
     )
 
-    ;; ê°’ì„ ì°¾ì€ ê²½ìš°ì—ë§Œ ë ˆì´ë¸” ìƒì„±
+    ;; °ªÀ» Ã£Àº °æ¿ì¿¡¸¸ ·¹ÀÌºí »ı¼º
     (if (and found-table val)
       (progn
-        ;; 1. ìœ„ì¹˜ ê³„ì‚° (Visual Center)
+        ;; 1. À§Ä¡ °è»ê (Visual Center)
         (setq center (fn:polylabel ent 0.1))
         
-        ;; 2. ìµœì  ê°ë„ ê³„ì‚° (ìµœì¥ í˜„ ë°©í–¥)
+        ;; 2. ÃÖÀû °¢µµ °è»ê (ÃÖÀå Çö ¹æÇâ)
         (setq pts (util:get-poly-points ent))
         (setq ang (util:get-best-angle center pts))
 
-        ;; 3. í…ìŠ¤íŠ¸ ìƒì„±
+        ;; 3. ÅØ½ºÆ® »ı¼º
         (entmake (list
           '(0 . "TEXT")
           '(100 . "AcDbEntity")
@@ -225,9 +225,9 @@
 
   (setvar "CMDECHO" old-cmdecho)
   (vla-EndUndoMark doc)
-  (princ (strcat "\nì™„ë£Œ: ì´ " (itoa (sslength ss)) "ê°œ ì¤‘ " (itoa count) "ê°œì˜ ë ˆì´ë¸”ì´ ìƒì„±ë˜ì—ˆìŠµë‹ˆë‹¤."))
+  (princ (strcat "\n¿Ï·á: ÃÑ " (itoa (sslength ss)) "°³ Áß " (itoa count) "°³ÀÇ ·¹ÀÌºíÀÌ »ı¼ºµÇ¾ú½À´Ï´Ù."))
   (princ)
 )
 
-(princ "\nOD ë ˆì´ë¸” ìƒì„± ë„êµ¬(í•„ë“œ í†µí•© ê²€ìƒ‰) ë¡œë“œ ì™„ë£Œ.")
+(princ "\nOD ·¹ÀÌºí »ı¼º µµ±¸(ÇÊµå ÅëÇÕ °Ë»ö) ·Îµå ¿Ï·á.")
 (princ)

@@ -1,20 +1,20 @@
 ;;; AreaAdjust.lsp
-;;; ì§€ì  ê³µì°¨ë©´ì  ê¸°ì¤€ í†µí•© ë©´ì  ì¡°ì • ë„êµ¬ (ì´ë™í˜• & ê³ ì •í˜•)
-;;; AutoCAD 2013 & Windows 11 í™˜ê²½ ìµœì í™”
+;;; ÁöÀû °øÂ÷¸éÀû ±âÁØ ÅëÇÕ ¸éÀû Á¶Á¤ µµ±¸ (ÀÌµ¿Çü & °íÁ¤Çü)
+;;; AutoCAD 2013 & Windows 11 È¯°æ ÃÖÀûÈ­
 
 (vl-load-com)
 
 ;; ==========================================
-;; [1] ê³µí†µ ìœ í‹¸ë¦¬í‹° ë° ìˆ˜ì‹ í•¨ìˆ˜
+;; [1] °øÅë À¯Æ¿¸®Æ¼ ¹× ¼ö½Ä ÇÔ¼ö
 ;; ==========================================
 
-;; ì •ì  ì¶”ì¶œ
+;; Á¤Á¡ ÃßÃâ
 (defun util:get-vertices (ent / pts)
   (foreach x (entget ent) (if (= (car x) 10) (setq pts (cons (cdr x) pts))))
   (reverse pts)
 )
 
-;; CW ë©´ì  ê³„ì‚° (ì–‘ìˆ˜ ë°˜í™˜)
+;; CW ¸éÀû °è»ê (¾ç¼ö ¹İÈ¯)
 (defun util:get-signed-area (pts / area p1 p2)
   (setq area 0.0)
   (setq pts (append pts (list (car pts))))
@@ -25,18 +25,18 @@
   (* 0.5 area)
 )
 
-;; ì‹œê³„ ë°©í–¥ ê°•ì œ ì •ë ¬
+;; ½Ã°è ¹æÇâ °­Á¦ Á¤·Ä
 (defun util:ensure-clockwise (pts)
   (if (< (util:get-signed-area pts) 0) (reverse pts) pts)
 )
 
-;; ê³µì°¨ ë©´ì  ê³µì‹: F = 0.026^2 * M * sqrt(S)
+;; °øÂ÷ ¸éÀû °ø½Ä: F = 0.026^2 * M * sqrt(S)
 (defun util:calc-tolerance (s scale / m f)
   (setq m scale f (* (* 0.026 0.026) m (sqrt s)))
   (atof (rtos f 2 3))
 )
 
-;; ì…ë ¥ íŒŒì‹± ë° ëª©í‘œ ë©´ì  ì‚°ì¶œ
+;; ÀÔ·Â ÆÄ½Ì ¹× ¸ñÇ¥ ¸éÀû »êÃâ
 (defun util:parse-target (current-area input / prefix val scale reg-area tol-area target)
   (setq input (strcase (vl-string-trim " " input)) prefix (substr input 1 1))
   (cond
@@ -56,7 +56,7 @@
   target
 )
 
-;; ë‘ ì§ì„ ì˜ êµì°¨ì 
+;; µÎ Á÷¼±ÀÇ ±³Â÷Á¡
 (defun util:intersect-lines (p1 p2 p3 p4 / x1 y1 x2 y2 x3 y3 x4 y4 den t-num)
   (setq x1 (car p1) y1 (cadr p1) x2 (car p2) y2 (cadr p2)
         x3 (car p3) y3 (cadr p3) x4 (car p4) y4 (cadr p4))
@@ -70,23 +70,23 @@
   )
 )
 
-;; ìµœì ‘ì  ì •ì  ì¸ë±ìŠ¤
+;; ÃÖÁ¢Á¡ Á¤Á¡ ÀÎµ¦½º
 (defun util:get-nearest-vertex-idx (pt pts fuzz / idx min-dist res-idx i d)
   (setq i 0 min-dist 1e9 res-idx -1)
   (foreach v pts (setq d (distance pt v)) (if (< d min-dist) (setq min-dist d res-idx i)) (setq i (1+ i)))
   res-idx
 )
 
-;; ì¸ë±ìŠ¤ê°€ idx1ê³¼ idx2 ì‚¬ì´ì— ìˆëŠ”ì§€ í™•ì¸
+;; ÀÎµ¦½º°¡ idx1°ú idx2 »çÀÌ¿¡ ÀÖ´ÂÁö È®ÀÎ
 (defun util:is-between-indices (i idx1 idx2 n)
   (if (< idx1 idx2) (and (> i idx1) (< i idx2)) (or (> i idx1) (< i idx2)))
 )
 
-;; ë£¨í”„ ë§¤í¬ë¡œ ëŒ€ìš©
+;; ·çÇÁ ¸ÅÅ©·Î ´ë¿ë
 (defmacro loop-seg (&rest body) `(let ((continue T)) (while continue ,@body)))
 
 ;; ==========================================
-;; [2-A] ì—”ì§„ 1: êµ¬ê°„ ì´ë™ ë°©ì‹ (P1, P2 ì´ë™)
+;; [2-A] ¿£Áø 1: ±¸°£ ÀÌµ¿ ¹æ½Ä (P1, P2 ÀÌµ¿)
 ;; ==========================================
 
 (defun fn:adjust-area-move (pts-list idx1 idx2 target-area / 
@@ -133,7 +133,7 @@
 )
 
 ;; ==========================================
-;; [2-B] ì—”ì§„ 2: ê³ ì •ì  ë°©ì‹ (P1, P2 ìœ ì§€)
+;; [2-B] ¿£Áø 2: °íÁ¤Á¡ ¹æ½Ä (P1, P2 À¯Áö)
 ;; ==========================================
 
 (defun fn:adjust-area-fixed (pts-list idx1 idx2 target-area / 
@@ -174,33 +174,33 @@
 )
 
 ;; ==========================================
-;; [3] ë©”ì¸ ëª…ë ¹ì–´ ë° í†µí•© UI
+;; [3] ¸ŞÀÎ ¸í·É¾î ¹× ÅëÇÕ UI
 ;; ==========================================
 
 (defun fn:area-adjust-main (mode-name engine-fn / *error* doc ent pts target-input target-area p1 p2 idx1 idx2 new-pts flat-pts vla-orig vla-ref final-area)
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
   (defun *error* (msg)
-    (if (not (member msg '("Function cancelled" "quit / exit abort"))) (princ (strcat "\nì˜¤ë¥˜: " msg)))
+    (if (not (member msg '("Function cancelled" "quit / exit abort"))) (princ (strcat "\n¿À·ù: " msg)))
     (vla-EndUndoMark doc) (princ)
   )
   (vla-StartUndoMark doc)
-  (princ (strcat "\n[" mode-name " ëª¨ë“œ ì‹œì‘]"))
-  (setq ent (car (entsel "\nì¡°ì •í•  í´ë¦¬ë¼ì¸ì„ ì„ íƒí•˜ì„¸ìš”: ")))
+  (princ (strcat "\n[" mode-name " ¸ğµå ½ÃÀÛ]"))
+  (setq ent (car (entsel "\nÁ¶Á¤ÇÒ Æú¸®¶óÀÎÀ» ¼±ÅÃÇÏ¼¼¿ä: ")))
   (if (or (not ent) (/= (cdr (assoc 0 (entget ent))) "LWPOLYLINE"))
-    (progn (princ "\nì˜¤ë¥˜: LWPOLYLINEë§Œ ê°€ëŠ¥.") (exit))
+    (progn (princ "\n¿À·ù: LWPOLYLINE¸¸ °¡´É.") (exit))
   )
   (setq pts (util:ensure-clockwise (util:get-vertices ent))
         current-area (util:get-signed-area pts))
-  (princ (strcat "\ní˜„ì¬ ë©´ì : " (rtos current-area 2 2)))
-  (setq target-input (getstring T "\nëª©í‘œ ë©´ì  ì…ë ¥ (ì˜ˆ: 123, @100, #200, d10, t150): ")
+  (princ (strcat "\nÇöÀç ¸éÀû: " (rtos current-area 2 2)))
+  (setq target-input (getstring T "\n¸ñÇ¥ ¸éÀû ÀÔ·Â (¿¹: 123, @100, #200, d10, t150): ")
         target-area (util:parse-target current-area target-input))
-  (if (not target-area) (progn (princ "\nì˜¤ë¥˜: ì˜ëª»ëœ ì…ë ¥.") (exit)))
-  (princ (strcat "\nì„¤ì •ëœ ëª©í‘œ ë©´ì : " (rtos target-area 2 2)))
+  (if (not target-area) (progn (princ "\n¿À·ù: Àß¸øµÈ ÀÔ·Â.") (exit)))
+  (princ (strcat "\n¼³Á¤µÈ ¸ñÇ¥ ¸éÀû: " (rtos target-area 2 2)))
   (setvar "OSMODE" 1)
-  (setq p1 (getpoint "\nêµ¬ê°„ ì‹œì‘ì  P1 í´ë¦­: ") idx1 (util:get-nearest-vertex-idx p1 pts 0.001)
-        p2 (getpoint "\nêµ¬ê°„ ëì  P2 í´ë¦­: ") idx2 (util:get-nearest-vertex-idx p2 pts 0.001))
+  (setq p1 (getpoint "\n±¸°£ ½ÃÀÛÁ¡ P1 Å¬¸¯: ") idx1 (util:get-nearest-vertex-idx p1 pts 0.001)
+        p2 (getpoint "\n±¸°£ ³¡Á¡ P2 Å¬¸¯: ") idx2 (util:get-nearest-vertex-idx p2 pts 0.001))
   (setvar "OSMODE" 0)
-  (princ "\nì—°ì‚° ì¤‘...")
+  (princ "\n¿¬»ê Áß...")
   (setq new-pts (apply engine-fn (list pts idx1 idx2 target-area)))
   (if new-pts
     (progn
@@ -210,19 +210,19 @@
       (vla-put-color vla-ref 3)
       (setq final-area (util:get-signed-area new-pts))
       (if (<= (abs (- target-area final-area)) 0.01)
-        (princ (strcat "\n[ì™„ë£Œ] ë…¹ìƒ‰ ref_object ìƒì„±. ë©´ì : " (rtos final-area 2 2)))
-        (princ (strcat "\n[ì¤‘ë‹¨] 30íšŒ ì´ˆê³¼. ë…¹ìƒ‰ ref_object ìƒì„±. ë©´ì : " (rtos final-area 2 2) " (ì˜¤ì°¨: " (rtos (abs (- target-area final-area)) 2 4) ")"))
+        (princ (strcat "\n[¿Ï·á] ³ì»ö ref_object »ı¼º. ¸éÀû: " (rtos final-area 2 2)))
+        (princ (strcat "\n[Áß´Ü] 30È¸ ÃÊ°ú. ³ì»ö ref_object »ı¼º. ¸éÀû: " (rtos final-area 2 2) " (¿ÀÂ÷: " (rtos (abs (- target-area final-area)) 2 4) ")"))
       )
     )
   )
   (vla-EndUndoMark doc) (princ)
 )
 
-;; ëª…ë ¹ì–´ 1: êµ¬ê°„ ì´ë™ ë°©ì‹
-(defun C:AREA_ADJUST () (fn:area-adjust-main "êµ¬ê°„ ì´ë™" 'fn:adjust-area-move))
+;; ¸í·É¾î 1: ±¸°£ ÀÌµ¿ ¹æ½Ä
+(defun C:AREA_ADJUST () (fn:area-adjust-main "±¸°£ ÀÌµ¿" 'fn:adjust-area-move))
 
-;; ëª…ë ¹ì–´ 2: ê³ ì •ì  ë°©ì‹
-(defun C:AREA_ADJUST_FIXED () (fn:area-adjust-main "ê³ ì •ì  ìœ ì§€" 'fn:adjust-area-fixed))
+;; ¸í·É¾î 2: °íÁ¤Á¡ ¹æ½Ä
+(defun C:AREA_ADJUST_FIXED () (fn:area-adjust-main "°íÁ¤Á¡ À¯Áö" 'fn:adjust-area-fixed))
 
-(princ "\në©´ì  ì •ë°€ ì¡°ì • ë„êµ¬(í†µí•©) ë¡œë“œ ì™„ë£Œ.")
+(princ "\n¸éÀû Á¤¹Ğ Á¶Á¤ µµ±¸(ÅëÇÕ) ·Îµå ¿Ï·á.")
 (princ)

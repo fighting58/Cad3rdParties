@@ -1,10 +1,10 @@
 ;;; IncrementNumber.lsp
-;;; AutoCAD ìë™ ì¦ê°€ ìˆ«ì ì…ë ¥ ë„êµ¬
+;;; AutoCAD ÀÚµ¿ Áõ°¡ ¼ıÀÚ ÀÔ·Â µµ±¸
 ;;; Optimized for Windows 11 / AutoCAD 2013 (No Dialogs)
 
 (vl-load-com)
 
-;;; [ì „ì—­ ë³€ìˆ˜ ì„¤ì •]
+;;; [Àü¿ª º¯¼ö ¼³Á¤]
 (if (not *INCNUM-SIZE*)    (setq *INCNUM-SIZE* 1.0))
 (if (not *INCNUM-PREFIX*)  (setq *INCNUM-PREFIX* ""))
 (if (not *INCNUM-POSTFIX*) (setq *INCNUM-POSTFIX* ""))
@@ -12,85 +12,85 @@
 (defun C:INCNUM (/ *error* old-cmdecho size prefix postfix start 
                   num pt txt-val cur-size kw continue-settings)
   
-  ;; [1] ì—ëŸ¬ í•¸ë“¤ëŸ¬ (Esc í‚¤ ì…ë ¥ ì‹œ ëª¨ë“  ê³¼ì •ì—ì„œ ì¦‰ì‹œ íƒˆì¶œ ë° ë³µêµ¬)
+  ;; [1] ¿¡·¯ ÇÚµé·¯ (Esc Å° ÀÔ·Â ½Ã ¸ğµç °úÁ¤¿¡¼­ Áï½Ã Å»Ãâ ¹× º¹±¸)
   (defun *error* (msg)
     (if (not (member msg '("Function cancelled" "quit / exit abort")))
-      (princ (strcat "\nì˜¤ë¥˜: " msg))
+      (princ (strcat "\n¿À·ù: " msg))
     )
-    (if old-cmdecho (setvar "CMDECHO" old-cmdecho)) ; ì„¤ì • ë³µêµ¬
-    (princ "\nì‚¬ìš©ìì— ì˜í•´ ì·¨ì†Œë˜ì—ˆìŠµë‹ˆë‹¤.")
+    (if old-cmdecho (setvar "CMDECHO" old-cmdecho)) ; ¼³Á¤ º¹±¸
+    (princ "\n»ç¿ëÀÚ¿¡ ÀÇÇØ Ãë¼ÒµÇ¾ú½À´Ï´Ù.")
     (princ)
   )
 
-  ;; [2] í™˜ê²½ ì„¤ì • ë°±ì—… ë° ì´ˆê¸°í™”
+  ;; [2] È¯°æ ¼³Á¤ ¹é¾÷ ¹× ÃÊ±âÈ­
   (setq old-cmdecho (getvar "CMDECHO"))
   (setvar "CMDECHO" 0)
 
-  ;; [3] í˜„ì¬ ì„¸ì…˜ì˜ ì„¤ì •ê°’ ë¶ˆëŸ¬ì˜¤ê¸°
+  ;; [3] ÇöÀç ¼¼¼ÇÀÇ ¼³Á¤°ª ºÒ·¯¿À±â
   (setq size *INCNUM-SIZE*)
   (setq prefix *INCNUM-PREFIX*)
   (setq postfix *INCNUM-POSTFIX*)
 
-  ;; [4] ì„¤ì • ë³€ê²½ ë£¨í”„ (ì»´íŒ©íŠ¸ ëª¨ë“œ: 2í–‰ìœ¼ë¡œ í‘œì‹œ)
+  ;; [4] ¼³Á¤ º¯°æ ·çÇÁ (ÄÄÆÑÆ® ¸ğµå: 2ÇàÀ¸·Î Ç¥½Ã)
   (setq continue-settings T)
   (while continue-settings
     (initget "Size Prefix pOstfix")
-    ;; 1í–‰: í˜„ì¬ ì„¤ì • ìƒíƒœ í‘œì‹œ, 2í–‰: ì‚¬ìš©ì ì…ë ¥ ìš”ì²­ (ì´ 2í–‰)
-    (setq kw (getkword (strcat "\n[í˜„ì¬ì„¤ì • - í¬ê¸°: " (rtos size 2 2) ", ì ‘ë‘ì‚¬: \"" prefix "\", ì ‘ë¯¸ì‚¬: \"" postfix "\"]"
-                               "\nì„¤ì •ë³€ê²½ (Size/Prefix/pOstfix) [Enter: ì‹œì‘ê°’ ì…ë ¥]: ")))
+    ;; 1Çà: ÇöÀç ¼³Á¤ »óÅÂ Ç¥½Ã, 2Çà: »ç¿ëÀÚ ÀÔ·Â ¿äÃ» (ÃÑ 2Çà)
+    (setq kw (getkword (strcat "\n[ÇöÀç¼³Á¤ - Å©±â: " (rtos size 2 2) ", Á¢µÎ»ç: \"" prefix "\", Á¢¹Ì»ç: \"" postfix "\"]"
+                               "\n¼³Á¤º¯°æ (Size/Prefix/pOstfix) [Enter: ½ÃÀÛ°ª ÀÔ·Â]: ")))
     
     (cond
       ((= kw "Size")
        (initget 6)
-       (setq cur-size (getdist (strcat "\në³€ê²½í•  í°íŠ¸ í¬ê¸° ì…ë ¥ (" (rtos size 2 2) "): ")))
+       (setq cur-size (getdist (strcat "\nº¯°æÇÒ ÆùÆ® Å©±â ÀÔ·Â (" (rtos size 2 2) "): ")))
        (if cur-size (setq size cur-size))
       )
       ((= kw "Prefix")
-       (setq prefix (getstring T (strcat "\në³€ê²½í•  ì ‘ë‘ì‚¬ ì…ë ¥ (í˜„ì¬: \"" prefix "\") [Enter: ì‚­ì œ]: ")))
+       (setq prefix (getstring T (strcat "\nº¯°æÇÒ Á¢µÎ»ç ÀÔ·Â (ÇöÀç: \"" prefix "\") [Enter: »èÁ¦]: ")))
       )
       ((= kw "pOstfix")
-       (setq postfix (getstring T (strcat "\në³€ê²½í•  ì ‘ë¯¸ì‚¬ ì…ë ¥ (í˜„ì¬: \"" postfix "\") [Enter: ì‚­ì œ]: ")))
+       (setq postfix (getstring T (strcat "\nº¯°æÇÒ Á¢¹Ì»ç ÀÔ·Â (ÇöÀç: \"" postfix "\") [Enter: »èÁ¦]: ")))
       )
-      (t (setq continue-settings nil)) ; Enter ì…ë ¥ ì‹œ ë‹¤ìŒ ë‹¨ê³„
+      (t (setq continue-settings nil)) ; Enter ÀÔ·Â ½Ã ´ÙÀ½ ´Ü°è
     )
     
-    ;; ë³€ê²½ëœ ì„¤ì •ì„ ì „ì—­ ë³€ìˆ˜ì— ì‹¤ì‹œê°„ ì €ì¥
+    ;; º¯°æµÈ ¼³Á¤À» Àü¿ª º¯¼ö¿¡ ½Ç½Ã°£ ÀúÀå
     (setq *INCNUM-SIZE* size)
     (setq *INCNUM-PREFIX* prefix)
     (setq *INCNUM-POSTFIX* postfix)
   )
 
-  ;; [5] ì‹œì‘ê°’ ì…ë ¥ (Enter ì‹œ 1ë¡œ ì‹œì‘, Esc ì‹œ ì¤‘ë‹¨)
+  ;; [5] ½ÃÀÛ°ª ÀÔ·Â (Enter ½Ã 1·Î ½ÃÀÛ, Esc ½Ã Áß´Ü)
   (initget 4)
-  (setq start (getint "\nì‹œì‘ê°’ì„ ì…ë ¥í•˜ì„¸ìš” (1) [Esc: ì·¨ì†Œ]: "))
+  (setq start (getint "\n½ÃÀÛ°ªÀ» ÀÔ·ÂÇÏ¼¼¿ä (1) [Esc: Ãë¼Ò]: "))
   (if (not start) (setq start 1))
   (setq num start)
 
-  ;; [6] ë©”ì¸ ì…ë ¥ ë£¨í”„ (Enter/Esc ì‹œ ì¢…ë£Œ)
-  (princ "\ní™”ë©´ í´ë¦­ ì‹œ ìˆ«ì ì‚½ì…. ì¢…ë£Œí•˜ë ¤ë©´ Enter ë˜ëŠ” Esc.")
-  (while (setq pt (getpoint "\nì‚½ì… ì§€ì  í´ë¦­: "))
+  ;; [6] ¸ŞÀÎ ÀÔ·Â ·çÇÁ (Enter/Esc ½Ã Á¾·á)
+  (princ "\nÈ­¸é Å¬¸¯ ½Ã ¼ıÀÚ »ğÀÔ. Á¾·áÇÏ·Á¸é Enter ¶Ç´Â Esc.")
+  (while (setq pt (getpoint "\n»ğÀÔ ÁöÁ¡ Å¬¸¯: "))
     (setq txt-val (strcat prefix (itoa num) postfix))
     
     (entmake (list
                '(0 . "TEXT")
-               (cons 10 pt)           ; ì‚½ì… ì§€ì 
-               (cons 40 size)         ; ë¬¸ì í¬ê¸°
-               (cons 1 txt-val)       ; ë‚´ìš©
-               '(7 . "Standard")      ; ìŠ¤íƒ€ì¼
-               '(72 . 1)              ; ì¤‘ê°„ì¤‘ì‹¬(MC) ì„¤ì •
-               '(73 . 2)              ; ì¤‘ê°„ì¤‘ì‹¬(MC) ì„¤ì •
-               (cons 11 pt)           ; ì •ë ¬ ê¸°ì¤€ì 
+               (cons 10 pt)           ; »ğÀÔ ÁöÁ¡
+               (cons 40 size)         ; ¹®ÀÚ Å©±â
+               (cons 1 txt-val)       ; ³»¿ë
+               '(7 . "Standard")      ; ½ºÅ¸ÀÏ
+               '(72 . 1)              ; Áß°£Áß½É(MC) ¼³Á¤
+               '(73 . 2)              ; Áß°£Áß½É(MC) ¼³Á¤
+               (cons 11 pt)           ; Á¤·Ä ±âÁØÁ¡
              ))
     
     (setq num (1+ num))
-    (princ (strcat "\nì‚½ì…ë¨: " txt-val ". ë‹¤ìŒ ìˆ«ì: " (itoa num)))
+    (princ (strcat "\n»ğÀÔµÊ: " txt-val ". ´ÙÀ½ ¼ıÀÚ: " (itoa num)))
   )
 
-  ;; [7] í™˜ê²½ ì„¤ì • ë³µêµ¬ ë° ì¢…ë£Œ
+  ;; [7] È¯°æ ¼³Á¤ º¹±¸ ¹× Á¾·á
   (setvar "CMDECHO" old-cmdecho)
-  (princ "\nì •ìƒì ìœ¼ë¡œ ì¢…ë£Œë˜ì—ˆìŠµë‹ˆë‹¤.")
+  (princ "\nÁ¤»óÀûÀ¸·Î Á¾·áµÇ¾ú½À´Ï´Ù.")
   (princ)
 )
 
-(princ "\nìë™ ìˆ«ì ì¦ê°€ ë„êµ¬ ë¡œë“œ ì™„ë£Œ.")
+(princ "\nÀÚµ¿ ¼ıÀÚ Áõ°¡ µµ±¸ ·Îµå ¿Ï·á.")
 (princ)

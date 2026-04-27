@@ -1,58 +1,58 @@
-;;; ì¢Œí‘œ ì˜¤ì‚¬ì˜¤ì… ì¬ê²°ì • ë„êµ¬ (CoordRound)
-;;; AutoCAD Map 3D 2013 ë° Windows 11 í™˜ê²½ ìµœì í™”
-;;; ì„ íƒëœ ê°ì²´ì˜ ì¢Œí‘œë¥¼ ì§€ì •ëœ ìë¦¬ìˆ˜ë¡œ ì˜¤ì‚¬ì˜¤ì…(Round half to even)í•˜ì—¬ ìƒˆë¡œìš´ ê°ì²´ë¥¼ ìƒì„±í•©ë‹ˆë‹¤.
+;;; ÁÂÇ¥ ¿À»ç¿ÀÀÔ Àç°áÁ¤ µµ±¸ (CoordRound)
+;;; AutoCAD Map 3D 2013 ¹× Windows 11 È¯°æ ÃÖÀûÈ­
+;;; ¼±ÅÃµÈ °´Ã¼ÀÇ ÁÂÇ¥¸¦ ÁöÁ¤µÈ ÀÚ¸®¼ö·Î ¿À»ç¿ÀÀÔ(Round half to even)ÇÏ¿© »õ·Î¿î °´Ã¼¸¦ »ı¼ºÇÕ´Ï´Ù.
 ;;; 
-;;; [ê·œì¹™ ì¤€ìˆ˜]:
-;;; - ì›ë³¸ ê°ì²´ ë³´ì¡´ ë° ë…¹ìƒ‰(Color 3)ì˜ ref_object ìƒì„± (Rule 3)
-;;; - ëª¨ë“  ìƒí˜¸ì‘ìš©ì€ ëª…ë ¹í–‰ í”„ë¡¬í”„íŠ¸ ì‚¬ìš© (Rule 2)
-;;; - í•œê¸€ ì£¼ì„ ì‚¬ìš© ë° í‘œì¤€ ë¡œë“œ ë©”ì‹œì§€ ì ìš©
+;;; [±ÔÄ¢ ÁØ¼ö]:
+;;; - ¿øº» °´Ã¼ º¸Á¸ ¹× ³ì»ö(Color 3)ÀÇ ref_object »ı¼º (Rule 3)
+;;; - ¸ğµç »óÈ£ÀÛ¿ëÀº ¸í·ÉÇà ÇÁ·ÒÇÁÆ® »ç¿ë (Rule 2)
+;;; - ÇÑ±Û ÁÖ¼® »ç¿ë ¹× Ç¥ÁØ ·Îµå ¸Ş½ÃÁö Àû¿ë
 
 (vl-load-com)
 
 ;; ==========================================
-;; [1] ê¸°í•˜ ì—°ì‚° ë° ê³µí†µ ìœ í‹¸ë¦¬í‹° (util:)
+;; [1] ±âÇÏ ¿¬»ê ¹× °øÅë À¯Æ¿¸®Æ¼ (util:)
 ;; ==========================================
 
-;; ì˜¤ì‚¬ì˜¤ì…(Round half to even) ìˆ˜í•™ í•¨ìˆ˜
-;; num: ëŒ€ìƒ ìˆ«ì
-;; prec: ì†Œìˆ˜ì  ìë¦¬ìˆ˜
+;; ¿À»ç¿ÀÀÔ(Round half to even) ¼öÇĞ ÇÔ¼ö
+;; num: ´ë»ó ¼ıÀÚ
+;; prec: ¼Ò¼öÁ¡ ÀÚ¸®¼ö
 (defun util:round-half-to-even (num prec / factor shifted integral fractional)
   (setq factor (expt 10.0 prec))
   (setq shifted (* num factor))
-  ;; ì—¡ì‹¤ë¡ (1e-9)ì„ ë”í•´ ë¶€ë™ì†Œìˆ˜ì  ì˜¤ì°¨ ë°©ì§€
+  ;; ¿¦½Ç·Ğ(1e-9)À» ´õÇØ ºÎµ¿¼Ò¼öÁ¡ ¿ÀÂ÷ ¹æÁö
   (setq integral (fix (if (>= shifted 0) (+ shifted 1e-9) (- shifted 1e-9))))
   (setq fractional (abs (- shifted integral)))
   
   (if (equal fractional 0.5 1e-7)
     (if (= (rem (abs integral) 2) 0)
-      ;; ì§ìˆ˜ì´ë©´ ë²„ë¦¼
+      ;; Â¦¼öÀÌ¸é ¹ö¸²
       (/ (float integral) factor)
-      ;; í™€ìˆ˜ì´ë©´ ì˜¬ë¦¼ (ë¶€í˜¸ì— ë”°ë¼ ë°©í–¥ ê²°ì •)
+      ;; È¦¼öÀÌ¸é ¿Ã¸² (ºÎÈ£¿¡ µû¶ó ¹æÇâ °áÁ¤)
       (/ (float (+ integral (if (>= shifted 0) 1 -1))) factor)
     )
-    ;; 0.5ê°€ ì•„ë‹ˆë©´ ì¼ë°˜ì ì¸ ë°˜ì˜¬ë¦¼ (rtos í™œìš©)
+    ;; 0.5°¡ ¾Æ´Ï¸é ÀÏ¹İÀûÀÎ ¹İ¿Ã¸² (rtos È°¿ë)
     (/ (atof (rtos shifted 2 0)) factor)
   )
 )
 
-;; ë¦¬ìŠ¤íŠ¸ ë‚´ì˜ ëª¨ë“  ìˆ«ìë¥¼ ì˜¤ì‚¬ì˜¤ì… ì²˜ë¦¬ (ì£¼ë¡œ í´ë¦¬ë¼ì¸ ì¢Œí‘œìš©)
+;; ¸®½ºÆ® ³»ÀÇ ¸ğµç ¼ıÀÚ¸¦ ¿À»ç¿ÀÀÔ Ã³¸® (ÁÖ·Î Æú¸®¶óÀÎ ÁÂÇ¥¿ë)
 (defun util:round-list-half-to-even (lst prec)
   (mapcar '(lambda (x) (util:round-half-to-even x prec)) lst)
 )
 
 ;; ==========================================
-;; [2] ê°ì²´ ì²˜ë¦¬ ì—”ì§„ (fn:)
+;; [2] °´Ã¼ Ã³¸® ¿£Áø (fn:)
 ;; ==========================================
 
 (defun fn:coord-round-engine (prec / ss i ent vla_obj obj_name coords old_coords new_coords p1 p2 center count acDoc)
   (setq acDoc (vla-get-activedocument (vlax-get-acad-object)))
   (vla-startundomark acDoc)
   
-  (princ (strcat "\n[ì¢Œí‘œ ì˜¤ì‚¬ì˜¤ì… ë³€í™˜ - ì†Œìˆ˜ì  " (itoa prec) "ìë¦¬]"))
+  (princ (strcat "\n[ÁÂÇ¥ ¿À»ç¿ÀÀÔ º¯È¯ - ¼Ò¼öÁ¡ " (itoa prec) "ÀÚ¸®]"))
   (setq ss (ssget '((0 . "POINT,LINE,LWPOLYLINE,CIRCLE,ARC,TEXT,MTEXT"))))
   
   (if (not ss)
-    (progn (princ "\nì„ íƒëœ ê°ì²´ê°€ ì—†ìŠµë‹ˆë‹¤.") (vla-endundomark acDoc) (exit))
+    (progn (princ "\n¼±ÅÃµÈ °´Ã¼°¡ ¾ø½À´Ï´Ù.") (vla-endundomark acDoc) (exit))
   )
 
   (setq count 0 i 0)
@@ -61,19 +61,19 @@
     (setq vla_obj (vlax-ename->vla-object ent))
     (setq obj_name (vla-get-objectname vla_obj))
     
-    ;; ì›ë³¸ ë³µì‚¬ (Rule 3)
+    ;; ¿øº» º¹»ç (Rule 3)
     (setq vla_ref (vla-copy vla_obj))
-    (vla-put-color vla_ref 3) ;; ë…¹ìƒ‰(Color 3) ì„¤ì •
+    (vla-put-color vla_ref 3) ;; ³ì»ö(Color 3) ¼³Á¤
     
     (cond
-      ;; 1. í´ë¦¬ë¼ì¸ ì²˜ë¦¬
+      ;; 1. Æú¸®¶óÀÎ Ã³¸®
       ((= obj_name "AcDbPolyline")
        (setq old_coords (vlax-get vla_ref 'Coordinates))
        (setq new_coords (util:round-list-half-to-even old_coords prec))
        (vlax-put vla_ref 'Coordinates new_coords)
       )
       
-      ;; 2. ë¼ì¸ ì²˜ë¦¬
+      ;; 2. ¶óÀÎ Ã³¸®
       ((= obj_name "AcDbLine")
        (setq p1 (vlax-get vla_ref 'StartPoint))
        (setq p2 (vlax-get vla_ref 'EndPoint))
@@ -81,7 +81,7 @@
        (vla-put-endpoint vla_ref (vlax-3d-point (util:round-list-half-to-even p2 prec)))
       )
       
-      ;; 3. ì , í…ìŠ¤íŠ¸, ì›, í˜¸ ë“± (ì¤‘ì‹¬ì /ì‚½ì…ì  ê¸°ë°˜)
+      ;; 3. Á¡, ÅØ½ºÆ®, ¿ø, È£ µî (Áß½ÉÁ¡/»ğÀÔÁ¡ ±â¹İ)
       ((member obj_name '("AcDbPoint" "AcDbText" "AcDbMText" "AcDbCircle" "AcDbArc"))
        (setq p1 (vlax-get vla_ref (if (member obj_name '("AcDbCircle" "AcDbArc")) 'Center 'InsertionPoint)))
        (if (member obj_name '("AcDbCircle" "AcDbArc"))
@@ -94,19 +94,19 @@
   )
 
   (vla-endundomark acDoc)
-  (princ (strcat "\nì™„ë£Œ: ì´ " (itoa count) "ê°œì˜ ê°ì²´ê°€ ë³€í™˜ë˜ì–´ ë…¹ìƒ‰ìœ¼ë¡œ ìƒì„±ë˜ì—ˆìŠµë‹ˆë‹¤."))
+  (princ (strcat "\n¿Ï·á: ÃÑ " (itoa count) "°³ÀÇ °´Ã¼°¡ º¯È¯µÇ¾î ³ì»öÀ¸·Î »ı¼ºµÇ¾ú½À´Ï´Ù."))
   (princ)
 )
 
 ;; ==========================================
-;; [3] ì§„ì… ëª…ë ¹ì–´
+;; [3] ÁøÀÔ ¸í·É¾î
 ;; ==========================================
 
-;; ì†Œìˆ˜ì  2ìë¦¬ ì˜¤ì‚¬ì˜¤ì…
+;; ¼Ò¼öÁ¡ 2ÀÚ¸® ¿À»ç¿ÀÀÔ
 (defun C:OSA2 () (fn:coord-round-engine 2))
 
-;; ì†Œìˆ˜ì  3ìë¦¬ ì˜¤ì‚¬ì˜¤ì…
+;; ¼Ò¼öÁ¡ 3ÀÚ¸® ¿À»ç¿ÀÀÔ
 (defun C:OSA3 () (fn:coord-round-engine 3))
 
-(princ "\nì¢Œí‘œ ì˜¤ì‚¬ì˜¤ì… ì¬ê²°ì • ë„êµ¬ ë¡œë“œ ì™„ë£Œ.")
+(princ "\nÁÂÇ¥ ¿À»ç¿ÀÀÔ Àç°áÁ¤ µµ±¸ ·Îµå ¿Ï·á.")
 (princ)

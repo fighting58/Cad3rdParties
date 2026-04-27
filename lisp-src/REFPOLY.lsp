@@ -1,15 +1,15 @@
 ;;; REFPOLY.lsp
-;;; í†µí•© ì°¸ì¡° í´ë¦¬ë¼ì¸ ìˆ˜ì • ë„êµ¬ (CW ë° CCW/Mixed ì§€ì›)
-;;; AutoCAD 2013 & Windows 11 í™˜ê²½ ìµœì í™”
+;;; ÅëÇÕ ÂüÁ¶ Æú¸®¶óÀÎ ¼öÁ¤ µµ±¸ (CW ¹× CCW/Mixed Áö¿ø)
+;;; AutoCAD 2013 & Windows 11 È¯°æ ÃÖÀûÈ­
 
 (vl-load-com)
 (if (not fn:outerbound) (load "OuterBoundary.lsp"))
 
 ;; ==========================================
-;; [1] ê³µí†µ ìœ í‹¸ë¦¬í‹° í•¨ìˆ˜
+;; [1] °øÅë À¯Æ¿¸®Æ¼ ÇÔ¼ö
 ;; ==========================================
 
-;; ì •ì  ì¶”ì¶œ
+;; Á¤Á¡ ÃßÃâ
 (defun util:get-vertices (ent / pts)
   (foreach x (entget ent)
     (if (= (car x) 10)
@@ -19,7 +19,7 @@
   (reverse pts)
 )
 
-;; ë¶€í˜¸ ìˆëŠ” ë©´ì  ê³„ì‚°
+;; ºÎÈ£ ÀÖ´Â ¸éÀû °è»ê
 (defun util:get-signed-area (pts / area p1 p2)
   (setq area 0.0)
   (setq pts (append pts (list (car pts))))
@@ -30,7 +30,7 @@
   area
 )
 
-;; ë°©í–¥ ì •ë ¬ í•¨ìˆ˜ë“¤
+;; ¹æÇâ Á¤·Ä ÇÔ¼öµé
 (defun util:ensure-clockwise (pts)
   (if (< (util:get-signed-area pts) 0) (reverse pts) pts)
 )
@@ -39,7 +39,7 @@
   (if (> (util:get-signed-area pts) 0) (reverse pts) pts)
 )
 
-;; ë¦¬ìŠ¤íŠ¸ ìˆœì„œëŒ€ë¡œ êµ¬ê°„ ì¶”ì¶œ
+;; ¸®½ºÆ® ¼ø¼­´ë·Î ±¸°£ ÃßÃâ
 (defun util:get-segment-by-list-order (lst idx1 idx2 / res i len continue)
   (setq len (length lst))
   (setq i idx1)
@@ -55,12 +55,12 @@
   (reverse res)
 )
 
-;; ì  ìœ íš¨ì„± í™•ì¸
+;; Á¡ À¯È¿¼º È®ÀÎ
 (defun util:is-on-poly (pt ent fuzz)
   (equal pt (vlax-curve-getClosestPointTo ent pt) fuzz)
 )
 
-;; ìµœì ‘ì  ì •ì  ì¸ë±ìŠ¤
+;; ÃÖÁ¢Á¡ Á¤Á¡ ÀÎµ¦½º
 (defun util:get-nearest-vertex-idx (pt pts fuzz / idx min-dist res-idx i d)
   (setq i 0 min-dist 1e9 res-idx -1)
   (foreach v pts
@@ -72,7 +72,7 @@
 )
 
 ;; ==========================================
-;; [2] í•µì‹¬ ì—°ì‚° ì—”ì§„
+;; [2] ÇÙ½É ¿¬»ê ¿£Áø
 ;; ==========================================
 (defun fn:refpoly-engine (mode-desc ref-norm-fn target-norm-fn / 
                           *error* old-osmode old-cmdecho doc ss-ref ref-ent ref-pts is-temp-ref 
@@ -83,14 +83,14 @@
   
   (defun *error* (msg)
     (if (not (member msg '("Function cancelled" "quit / exit abort")))
-      (princ (strcat "\nì˜¤ë¥˜: " msg))
+      (princ (strcat "\n¿À·ù: " msg))
     )
     (if (and is-temp-ref ref-ent) (entdel ref-ent))
     (if old-osmode (setvar "OSMODE" old-osmode))
     (if old-cmdecho (setvar "CMDECHO" old-cmdecho))
     (vla-EndUndoMark doc)
     (command "_.undo" "1")
-    (princ "\nì‘ì—…ì´ ì¤‘ë‹¨ë˜ì—ˆìŠµë‹ˆë‹¤.")
+    (princ "\nÀÛ¾÷ÀÌ Áß´ÜµÇ¾ú½À´Ï´Ù.")
     (princ)
   )
 
@@ -99,57 +99,57 @@
   (setq old-cmdecho (getvar "CMDECHO"))
   (setvar "CMDECHO" 0)
 
-  (princ (strcat "\n[" mode-desc " ëª¨ë“œ ì‹¤í–‰]"))
+  (princ (strcat "\n[" mode-desc " ¸ğµå ½ÇÇà]"))
 
-  ;; 1. ê¸°ì¤€ í´ë¦¬ë¼ì¸ ì„ íƒ
-  (princ "\n[ë‹¨ê³„ 1] ê¸°ì¤€ í´ë¦¬ë¼ì¸(Reference)ì„ ì„ íƒí•˜ì„¸ìš”.")
+  ;; 1. ±âÁØ Æú¸®¶óÀÎ ¼±ÅÃ
+  (princ "\n[´Ü°è 1] ±âÁØ Æú¸®¶óÀÎ(Reference)À» ¼±ÅÃÇÏ¼¼¿ä.")
   (setq ss-ref (ssget '((0 . "LINE,LWPOLYLINE,POLYLINE"))))
-  (if (not ss-ref) (progn (princ "\nì·¨ì†Œë˜ì—ˆìŠµë‹ˆë‹¤.") (exit)))
+  (if (not ss-ref) (progn (princ "\nÃë¼ÒµÇ¾ú½À´Ï´Ù.") (exit)))
 
   (setq is-temp-ref nil)
   (if (> (sslength ss-ref) 1)
     (progn
-      (princ "\në‹¤ì¤‘ ê°ì²´ì—ì„œ ì™¸ê³½ì„  ì¶”ì¶œ ì¤‘...")
+      (princ "\n´ÙÁß °´Ã¼¿¡¼­ ¿Ü°û¼± ÃßÃâ Áß...")
       (setq ref-ent (fn:outerbound ss-ref))
-      (if (not ref-ent) (progn (princ "\nì™¸ê³½ì„  ì¶”ì¶œ ì‹¤íŒ¨.") (exit)))
+      (if (not ref-ent) (progn (princ "\n¿Ü°û¼± ÃßÃâ ½ÇÆĞ.") (exit)))
       (setq is-temp-ref T)
     )
     (progn
       (setq ref-ent (ssname ss-ref 0))
       (if (or (/= (cdr (assoc 0 (entget ref-ent))) "LWPOLYLINE")
               (= (logand (cdr (assoc 70 (entget ref-ent))) 1) 0))
-        (progn (princ "\nì˜¤ë¥˜: ë‹¨ì¼ ê¸°ì¤€ì€ ë‹«íŒ LWPOLYLINEì´ì–´ì•¼ í•©ë‹ˆë‹¤.") (exit))
+        (progn (princ "\n¿À·ù: ´ÜÀÏ ±âÁØÀº ´İÈù LWPOLYLINEÀÌ¾î¾ß ÇÕ´Ï´Ù.") (exit))
       )
     )
   )
   (setq ref-pts (apply ref-norm-fn (list (util:get-vertices ref-ent))))
 
-  ;; 2. ìˆ˜ì • ëŒ€ìƒ í´ë¦¬ë¼ì¸ ì„ íƒ
-  (princ "\n[ë‹¨ê³„ 2] ëŒ€ìƒ í´ë¦¬ë¼ì¸(Target) 1ê°œë¥¼ ì„ íƒí•˜ì„¸ìš”.")
+  ;; 2. ¼öÁ¤ ´ë»ó Æú¸®¶óÀÎ ¼±ÅÃ
+  (princ "\n[´Ü°è 2] ´ë»ó Æú¸®¶óÀÎ(Target) 1°³¸¦ ¼±ÅÃÇÏ¼¼¿ä.")
   (setq ss-target (ssget ":S" '((0 . "LWPOLYLINE"))))
   (if (not ss-target) (exit))
   (setq target-ent (ssname ss-target 0))
   (if (= (logand (cdr (assoc 70 (entget target-ent))) 1) 0)
-    (progn (princ "\nì˜¤ë¥˜: ëŒ€ìƒ ê°ì²´ëŠ” ë°˜ë“œì‹œ ë‹«í˜€ ìˆì–´ì•¼ í•©ë‹ˆë‹¤.") (exit))
+    (progn (princ "\n¿À·ù: ´ë»ó °´Ã¼´Â ¹İµå½Ã ´İÇô ÀÖ¾î¾ß ÇÕ´Ï´Ù.") (exit))
   )
   (setq target-pts (apply target-norm-fn (list (util:get-vertices target-ent))))
 
-  ;; 3. ì  ì…ë ¥
+  ;; 3. Á¡ ÀÔ·Â
   (setvar "OSMODE" 1)
-  (setq p1 (getpoint "\n[ë‹¨ê³„ 3] ëŒ€ìƒ ì‹œì‘ì  P1 í´ë¦­: "))
-  (if (not (util:is-on-poly p1 target-ent 0.0005)) (progn (princ "\nì˜¤ë¥˜: ì ì´ ëŒ€ìƒ ìœ„ì— ì—†ìŒ.") (exit)))
+  (setq p1 (getpoint "\n[´Ü°è 3] ´ë»ó ½ÃÀÛÁ¡ P1 Å¬¸¯: "))
+  (if (not (util:is-on-poly p1 target-ent 0.0005)) (progn (princ "\n¿À·ù: Á¡ÀÌ ´ë»ó À§¿¡ ¾øÀ½.") (exit)))
   
-  (setq q1 (getpoint "\n[ë‹¨ê³„ 4] ê¸°ì¤€ ì‹œì‘ì  Q1 í´ë¦­: "))
-  (if (not (util:is-on-poly q1 ref-ent 0.0005)) (progn (princ "\nì˜¤ë¥˜: ì ì´ ê¸°ì¤€ ìœ„ì— ì—†ìŒ.") (exit)))
+  (setq q1 (getpoint "\n[´Ü°è 4] ±âÁØ ½ÃÀÛÁ¡ Q1 Å¬¸¯: "))
+  (if (not (util:is-on-poly q1 ref-ent 0.0005)) (progn (princ "\n¿À·ù: Á¡ÀÌ ±âÁØ À§¿¡ ¾øÀ½.") (exit)))
 
-  (setq p2 (getpoint "\n[ë‹¨ê³„ 5] ëŒ€ìƒ ëì  P2 í´ë¦­: "))
-  (if (not (util:is-on-poly p2 target-ent 0.0005)) (progn (princ "\nì˜¤ë¥˜: ì ì´ ëŒ€ìƒ ìœ„ì— ì—†ìŒ.") (exit)))
+  (setq p2 (getpoint "\n[´Ü°è 5] ´ë»ó ³¡Á¡ P2 Å¬¸¯: "))
+  (if (not (util:is-on-poly p2 target-ent 0.0005)) (progn (princ "\n¿À·ù: Á¡ÀÌ ´ë»ó À§¿¡ ¾øÀ½.") (exit)))
 
-  (setq q2 (getpoint "\n[ë‹¨ê³„ 6] ê¸°ì¤€ ëì  Q2 í´ë¦­: "))
-  (if (not (util:is-on-poly q2 ref-ent 0.0005)) (progn (princ "\nì˜¤ë¥˜: ì ì´ ê¸°ì¤€ ìœ„ì— ì—†ìŒ.") (exit)))
+  (setq q2 (getpoint "\n[´Ü°è 6] ±âÁØ ³¡Á¡ Q2 Å¬¸¯: "))
+  (if (not (util:is-on-poly q2 ref-ent 0.0005)) (progn (princ "\n¿À·ù: Á¡ÀÌ ±âÁØ À§¿¡ ¾øÀ½.") (exit)))
   (setvar "OSMODE" old-osmode)
 
-  ;; 4. ì •ì  ì¸ë±ìŠ¤ ë° êµ¬ê°„ ì¶”ì¶œ
+  ;; 4. Á¤Á¡ ÀÎµ¦½º ¹× ±¸°£ ÃßÃâ
   (setq idxP1 (util:get-nearest-vertex-idx p1 target-pts 0.0005))
   (setq idxQ1 (util:get-nearest-vertex-idx q1 ref-pts 0.0005))
   (setq idxP2 (util:get-nearest-vertex-idx p2 target-pts 0.0005))
@@ -164,33 +164,33 @@
   (setq flat-pts nil)
   (foreach v new-pts (setq flat-pts (append flat-pts (list (car v) (cadr v)))))
   
-  ;; 5. ê°ì²´ ì¢Œí‘œ ì—…ë°ì´íŠ¸
+  ;; 5. °´Ã¼ ÁÂÇ¥ ¾÷µ¥ÀÌÆ®
   (setq vla-target (vlax-ename->vla-object target-ent))
   (vlax-put-property vla-target 'Coordinates 
     (vlax-make-variant (vlax-safearray-fill (vlax-make-safearray vlax-vbDouble (cons 0 (1- (length flat-pts)))) flat-pts))
   )
 
-  ;; 6. ë§ˆë¬´ë¦¬
+  ;; 6. ¸¶¹«¸®
   (if is-temp-ref (entdel ref-ent))
   (setvar "CMDECHO" old-cmdecho)
   (vla-EndUndoMark doc)
-  (princ "\nìˆ˜ì •ì´ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤.")
+  (princ "\n¼öÁ¤ÀÌ ¿Ï·áµÇ¾ú½À´Ï´Ù.")
   (princ)
 )
 
 ;; ==========================================
-;; [3] ëª…ë ¹ì–´ ì •ì˜
+;; [3] ¸í·É¾î Á¤ÀÇ
 ;; ==========================================
 
-;; ì‹œê³„ ë°©í–¥ ëª¨ë“œ (ë‘˜ ë‹¤ CW)
+;; ½Ã°è ¹æÇâ ¸ğµå (µÑ ´Ù CW)
 (defun C:REFPOLY_CW ()
-  (fn:refpoly-engine "ì‹œê³„ ë°©í–¥(CW)" 'util:ensure-clockwise 'util:ensure-clockwise)
+  (fn:refpoly-engine "½Ã°è ¹æÇâ(CW)" 'util:ensure-clockwise 'util:ensure-clockwise)
 )
 
-;; í˜¼í•© ëª¨ë“œ (ê¸°ì¤€ CCW, ëŒ€ìƒ CW)
+;; È¥ÇÕ ¸ğµå (±âÁØ CCW, ´ë»ó CW)
 (defun C:REFPOLY_CCW ()
-  (fn:refpoly-engine "í˜¼í•©(ê¸°ì¤€CCW, ëŒ€ìƒCW)" 'util:ensure-counter-clockwise 'util:ensure-clockwise)
+  (fn:refpoly-engine "È¥ÇÕ(±âÁØCCW, ´ë»óCW)" 'util:ensure-counter-clockwise 'util:ensure-clockwise)
 )
 
-(princ "\ní†µí•© REFPOLY ë„êµ¬ ë¡œë“œ ì™„ë£Œ.")
+(princ "\nÅëÇÕ REFPOLY µµ±¸ ·Îµå ¿Ï·á.")
 (princ)
