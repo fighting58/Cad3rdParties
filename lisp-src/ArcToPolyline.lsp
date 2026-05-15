@@ -132,7 +132,7 @@
   (if (not ss) (progn (princ "\n선택된 객체가 없습니다.") (exit)))
 
   (initget "Number Midordinate Distance")
-  (setq mode (getkword "\n변환 옵션 선택 [등분할(N)/화살고(M)/현길이(D)]: "))
+  (setq mode (getkword "\n변환 옵션 선택 [등분할(N)/중앙종거(M)/현길이(D)]: "))
   (if (not mode) (setq mode "Number"))
 
   (cond
@@ -140,7 +140,7 @@
      (setq mode "N" val (getint "\n분할 수 입력 <10>: "))
      (if (not val) (setq val 10)))
     ((= mode "Midordinate")
-     (setq mode "M" val (getdist "\n최대 화살고(m) 입력 <0.05>: "))
+     (setq mode "M" val (getdist "\n최대 중앙종거(m) 입력 <0.05>: "))
      (if (not val) (setq val 0.05)))
     ((= mode "Distance")
      (setq mode "D" val (getdist "\n현 길이(m) 입력 <1.0>: "))

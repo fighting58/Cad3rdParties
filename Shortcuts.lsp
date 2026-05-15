@@ -8,20 +8,19 @@
 ;; ==========================================
 
 ;; 명령어 호출 시점에 대상 파일을 로드하고, 실제 명령을 실행
-(defun util:lazy-load (file-name cmd-sym / full-path)
+(defun util:lazy-load (file-name cmd-sym / full-path run-result)
   (setq full-path (findfile file-name))
   (if (not full-path) (setq full-path (findfile (strcat "lisp-src/" file-name))))
-  
-  (if (not (eval cmd-sym))
-    (if full-path
-      (load full-path)
-      (princ (strcat "\n오류: '" file-name "' 파일을 찾을 수 없습니다."))
-    )
+
+  ;; 명령 심볼이 아직 정의되지 않았다면 대상 파일을 로드
+  (if (and (not (vl-position cmd-sym (atoms-family 1))) full-path)
+    (load full-path)
   )
 
-  (if (eval cmd-sym)
-    (apply (eval cmd-sym) nil)
-    (princ (strcat "\n오류: '" (vl-princ-to-string cmd-sym) "' 명령어를 실행할 수 없습니다."))
+  ;; 명령 실행 (오류는 트랩하여 안내)
+  (setq run-result (vl-catch-all-apply cmd-sym nil))
+  (if (vl-catch-all-error-p run-result)
+    (princ (strcat "\n오류: '" (vl-princ-to-string cmd-sym) "' 명령어를 실행할 수 없습니다. (" (vl-catch-all-error-message run-result) ")"))
   )
   (princ)
 )
@@ -34,7 +33,7 @@
 (defun C:F3P  () (util:lazy-load "REFPOLY.lsp"         'c:REFPOLY_CCW))
 (defun C:AFO  () (util:lazy-load "AreaAdjust.lsp"      'c:AREA_ADJUST))
 (defun C:AFO2 () (util:lazy-load "AreaAdjust.lsp"      'c:AREA_ADJUST_FIXED))
-(defun C:PNC  () (util:lazy-load "ParcelSplit.lsp"     'c:PNC))
+(defun C:PNC  () (util:lazy-load "ParcelSplit.lsp"     'c:PARCEL_SPLIT))
 (defun C:WD5  () (util:lazy-load "MapIndex.lsp"        'c:MAPINDEX_500))
 (defun C:WD10 () (util:lazy-load "MapIndex.lsp"        'c:MAPINDEX_1000))
 (defun C:INC  () (util:lazy-load "IncrementNumber.lsp" 'c:INCNUM))
@@ -74,3 +73,7 @@
 
 (princ "\n단축 명령어 시스템 로드 완료.")
 (princ)
+
+
+
+

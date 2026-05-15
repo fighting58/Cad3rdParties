@@ -9,10 +9,24 @@
 ;; ==========================================
 
 ;; 레이어 생성 및 색상 설정
-(defun util:ensure-layer (layname color)
+(defun util:ensure-layer (layname color / old-layer)
+  (setq old-layer (getvar "CLAYER"))
   (if (not (tblsearch "LAYER" layname))
     (command "_.layer" "_make" layname "_color" color layname "")
   )
+  (if (and old-layer (/= (getvar "CLAYER") old-layer))
+    (setvar "CLAYER" old-layer)
+  )
+)
+
+;; 문자열 내 모든 공백류(스페이스/탭/개행/캐리지리턴) 제거
+(defun util:remove-all-whitespace (str / ch)
+  (foreach ch (list (chr 32) (chr 9) (chr 10) (chr 13))
+    (while (vl-string-search ch str)
+      (setq str (vl-string-subst "" ch str))
+    )
+  )
+  str
 )
 
 ;; 지목 리스트 정의 (28종)
@@ -20,7 +34,7 @@
 
 ;; 지번 문자열 파싱 엔진
 (defun fn:parse-parcel-string (str / res-reg res-jimok res-jibeon last-char)
-  (setq str (vl-string-trim " " str))
+  (setq str (util:remove-all-whitespace str))
   
   ;; 1. 대장 구분 (20 레이어용)
   (if (wcmatch str "산*")
@@ -130,5 +144,3 @@
 )
 (princ "\n지번 레이어 분해 도구 로드 완료.")
 (princ)
-
-

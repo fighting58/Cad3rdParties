@@ -56,20 +56,24 @@
   target
 )
 
+;; 점 좌표 형식 검사 (최소 x,y 보유)
+(defun util:point2d-p (p)
+  (and (listp p) (numberp (car p)) (numberp (cadr p)))
+)
+
 ;; 두 직선의 교차점
-(defun util:intersect-lines (p1 p2 p3 p4 / x1 y1 x2 y2 x3 y3 x4 y4 den t-num)
-  (setq x1 (car p1) y1 (cadr p1) x2 (car p2) y2 (cadr p2)
-        x3 (car p3) y3 (cadr p3) x4 (car p4) y4 (cadr p4))
-  (setq den (- (* (- x1 x2) (- y3 y4)) (* (- y1 y2) (- x3 x4))))
-  (if (not (equal den 0.0 1e-9))
-    (progn
-      (setq t-num (- (* (- x1 x3) (- y3 y4)) (* (- y1 y3) (- x3 x4))))
-      (list (+ x1 (* (/ t-num den) (- x2 x1))) (+ y1 (* (/ t-num den) (- y2 y1))))
-    )
+;; 두 직선의 교차점(무한 직선 기준: 선분 끝을 넘어 연장 교차 허용)
+(defun util:intersect-lines (p1 p2 p3 p4 / ip)
+  (setq ip (inters (list (car p1) (cadr p1) 0.0)
+                   (list (car p2) (cadr p2) 0.0)
+                   (list (car p3) (cadr p3) 0.0)
+                   (list (car p4) (cadr p4) 0.0)
+                   nil))
+  (if ip
+    (list (car ip) (cadr ip))
     nil
   )
 )
-
 ;; 최접점 정점 인덱스
 (defun util:get-nearest-vertex-idx (pt pts fuzz / idx min-dist res-idx i d)
   (setq i 0 min-dist 1e9 res-idx -1)
@@ -83,55 +87,82 @@
 )
 
 ;; 루프 매크로 대용
-(defmacro loop-seg (&rest body) `(let ((continue T)) (while continue ,@body)))
 
 ;; ==========================================
 ;; [2-A] 엔진 1: 구간 이동 방식 (P1, P2 이동)
 ;; ==========================================
 
 (defun fn:adjust-area-move (pts-list idx1 idx2 target-area /
-                            pts n i p1 p2 p-prev p-next seg-pts seg-len offset-dist
-                            dx dy v-inward new-seg-pts sub-pts iter current-area
-                            idx-prev idx-next d-val p2-orig new-p2 p1-adj p-last p-last-1 p2-adj
-                            final-seg head tail)
-  (setq iter 0 current-area (util:get-signed-area pts-list) n (length pts-list))
+                            pts n i p1 p2 p-prev p-next seg-len offset-dist
+                            v-inward new-seg-pts sub-pts iter current-area
+                            idx-prev idx-next d-val p1-adj p-last p-last-1 p2-adj
+                            final-seg head tail changed cnt-a seg-a seg-b)
+  (setq iter 0 current-area (util:get-signed-area pts-list) n (length pts-list) changed nil)
   (while (and (< iter 30) (> (abs (- target-area current-area)) 0.01))
     (setq seg-len 0.0 i idx1)
-    (loop-seg
+    (setq continue T)
+    (while continue
       (setq p1 (nth i pts-list) p2 (nth (rem (1+ i) n) pts-list))
       (setq seg-len (+ seg-len (distance p1 p2)))
       (if (= i idx2) (setq continue nil) (setq i (rem (1+ i) n)))
     )
+
     (setq offset-dist (/ (- target-area current-area) seg-len -1.0))
     (setq idx-prev (if (= idx1 0) (1- n) (1- idx1)) idx-next (rem (1+ idx2) n))
     (setq p-prev (nth idx-prev pts-list) p-next (nth idx-next pts-list))
+
     (setq new-seg-pts nil i idx1)
-    (loop-seg
+    (setq continue T)
+    (while continue
       (setq p1 (nth i pts-list) p2 (nth (rem (1+ i) n) pts-list) d-val (max 1e-9 (distance p1 p2)))
       (setq v-inward (list (/ (- (cadr p2) (cadr p1)) d-val) (/ (- (car p1) (car p2)) d-val)))
       (setq new-seg-pts (append new-seg-pts (list (list (+ (car p1) (* offset-dist (car v-inward))) (+ (cadr p1) (* offset-dist (cadr v-inward)))))))
       (if (= i idx2) (setq continue nil) (setq i (rem (1+ i) n)))
     )
-    (setq p2-orig (nth idx2 pts-list)
-          new-p2 (list (+ (car p2-orig) (* offset-dist (car v-inward))) (+ (cadr p2-orig) (* offset-dist (cadr v-inward)))))
-    (setq new-seg-pts (append new-seg-pts (list new-p2)))
-    (setq p1-adj (util:intersect-lines p-prev (nth idx1 pts-list) (car new-seg-pts) (cadr new-seg-pts))
-          p-last (last new-seg-pts) p-last-1 (nth (- (length new-seg-pts) 2) new-seg-pts)
-          p2-adj (util:intersect-lines (nth idx2 pts-list) p-next p-last p-last-1))
+
+
+    (setq p-last   (nth (1- (length new-seg-pts)) new-seg-pts)
+          p-last-1 (nth (- (length new-seg-pts) 2) new-seg-pts))
+
+    (if (and (util:point2d-p (car new-seg-pts))
+             (util:point2d-p (cadr new-seg-pts))
+             (util:point2d-p p-last)
+             (util:point2d-p p-last-1))
+      (setq p1-adj (util:intersect-lines p-prev (nth idx1 pts-list) (car new-seg-pts) (cadr new-seg-pts))
+            p2-adj (util:intersect-lines (nth idx2 pts-list) p-next p-last p-last-1))
+      (setq p1-adj nil p2-adj nil)
+    )
+
     (if (and p1-adj p2-adj)
       (progn
         (setq sub-pts (cdr (reverse (cdr (reverse new-seg-pts))))
-              final-seg (append (list p1-adj) sub-pts (list p2-adj))
-              head nil i 0)
-        (while (< i idx1) (setq head (append head (list (nth i pts-list)))) (setq i (1+ i)))
-        (setq tail nil i (1+ idx2))
-        (while (< i n) (setq tail (append tail (list (nth i pts-list)))) (setq i (1+ i)))
-        (setq pts-list (append head final-seg tail))
+              final-seg (append (list p1-adj) sub-pts (list p2-adj)))
+
+        ;; clockwise 구간 치환: idx1->idx2가 래핑되는 경우를 분리 처리
+        (if (<= idx1 idx2)
+          (progn
+            (setq head nil i 0)
+            (while (< i idx1) (setq head (append head (list (nth i pts-list)))) (setq i (1+ i)))
+            (setq tail nil i (1+ idx2))
+            (while (< i n) (setq tail (append tail (list (nth i pts-list)))) (setq i (1+ i)))
+            (setq pts-list (append head final-seg tail) changed T)
+          )
+          (progn
+            ;; 래핑 구간은 final-seg를 [idx1..n-1], [0..idx2]로 분리 후 원래 0번 시작 순서로 재조립
+            (setq cnt-a (- n idx1)
+                  seg-a (vl-subseq-custom final-seg 0 cnt-a)
+                  seg-b (vl-subseq-custom final-seg cnt-a (length final-seg)))
+            (setq tail nil i (1+ idx2))
+            (while (< i idx1) (setq tail (append tail (list (nth i pts-list)))) (setq i (1+ i)))
+            (setq pts-list (append seg-b tail seg-a) changed T)
+          )
+        )
       )
     )
+
     (setq current-area (util:get-signed-area pts-list) iter (1+ iter))
   )
-  pts-list
+  (if changed pts-list nil)
 )
 
 ;; ==========================================
@@ -175,6 +206,37 @@
   (reverse res)
 )
 
+;; 복제된 LWPOLYLINE의 정점을 강제 갱신 (2013 호환성 보강)
+(defun util:rewrite-lwpoly-vertices (ent new-pts / ed out idx p)
+  (setq ed (entget ent) out nil idx 0)
+  (foreach d ed
+    (if (= (car d) 10)
+      (progn
+        (setq p (nth idx new-pts))
+        (setq out (cons (cons 10 (list (car p) (cadr p))) out))
+        (setq idx (1+ idx))
+      )
+      (setq out (cons d out))
+    )
+  )
+  (entmod (reverse out))
+  (entupd ent)
+)
+
+;; 두 정점 목록이 사실상 동일한지 검사
+(defun util:pts-same-p (pts1 pts2 tol / ok)
+  (setq ok T)
+  (if (/= (length pts1) (length pts2))
+    (setq ok nil)
+    (while (and ok pts1 pts2)
+      (if (> (distance (car pts1) (car pts2)) tol)
+        (setq ok nil)
+      )
+      (setq pts1 (cdr pts1) pts2 (cdr pts2))
+    )
+  )
+  ok
+)
 ;; ==========================================
 ;; [3] 메인 명령어 및 통합 UI
 ;; ==========================================
@@ -236,35 +298,52 @@
             idx2 (util:get-nearest-vertex-idx p2 pts 0.001))
       (setvar "OSMODE" old-osmode)
 
-      (princ "\n연산 중...")
-      (setq new-pts (apply engine-fn (list pts idx1 idx2 target-area)))
-
-      (if new-pts
+      (if (or (< idx1 0) (< idx2 0) (= idx1 idx2))
         (progn
-          (setq vla-orig (vlax-ename->vla-object ent)
-                vla-ref (vla-copy vla-orig)
-                flat-pts nil)
-          (foreach v new-pts
-            (setq flat-pts (append flat-pts (list (car v) (cadr v))))
-          )
-          (vlax-put-property vla-ref 'Coordinates
-            (vlax-make-variant
-              (vlax-safearray-fill
-                (vlax-make-safearray vlax-vbDouble (cons 0 (1- (length flat-pts))))
-                flat-pts
+          (princ "\n오류: P1/P2가 동일 정점으로 인식되었습니다. 서로 다른 꼭지점을 선택하세요.")
+          (setq ok nil)
+        )
+      )
+
+      (if ok
+        (progn
+          (princ "\n연산 중...")
+          (setq new-pts (apply engine-fn (list pts idx1 idx2 target-area)))
+
+
+          (if (not new-pts)
+            (princ "\n오류: 선택 구간의 교차점 계산에 실패했습니다. P1/P2를 인접 모서리가 분명한 꼭지점으로 다시 선택하세요.")
+            (if (util:pts-same-p pts new-pts 0.0001)
+              (princ "\n오류: 계산 결과가 원본과 동일합니다. P1/P2 선택 또는 목표 면적을 다시 확인하세요.")
+              (progn
+                (setq vla-orig (vlax-ename->vla-object ent)
+                      vla-ref (vla-copy vla-orig)
+                      flat-pts nil)
+                (foreach v new-pts
+                  (setq flat-pts (append flat-pts (list (car v) (cadr v))))
+                )
+                (vlax-put-property vla-ref 'Coordinates
+                  (vlax-make-variant
+                    (vlax-safearray-fill
+                      (vlax-make-safearray vlax-vbDouble (cons 0 (1- (length flat-pts))))
+                      flat-pts
+                    )
+                  )
+                )
+                (vla-put-color vla-ref 3)
+                (util:rewrite-lwpoly-vertices (vlax-vla-object->ename vla-ref) new-pts)
+
+                (setq final-area (util:get-signed-area new-pts))
+                (if (<= (abs (- target-area final-area)) 0.01)
+                  (princ (strcat "\n[완료] 녹색 ref_object 생성. 면적: " (rtos final-area 2 2)))
+                  (princ (strcat "\n[중단] 30회 초과. 녹색 ref_object 생성. 면적: "
+                                 (rtos final-area 2 2)
+                                 " (오차: "
+                                 (rtos (abs (- target-area final-area)) 2 4)
+                                 ")"))
+                )
               )
             )
-          )
-          (vla-put-color vla-ref 3)
-
-          (setq final-area (util:get-signed-area new-pts))
-          (if (<= (abs (- target-area final-area)) 0.01)
-            (princ (strcat "\n[완료] 녹색 ref_object 생성. 면적: " (rtos final-area 2 2)))
-            (princ (strcat "\n[중단] 30회 초과. 녹색 ref_object 생성. 면적: "
-                           (rtos final-area 2 2)
-                           " (오차: "
-                           (rtos (abs (- target-area final-area)) 2 4)
-                           ")"))
           )
         )
       )
@@ -283,5 +362,26 @@
 
 (princ "\n면적 정밀 조정 도구(통합) 로드 완료.")
 (princ)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
