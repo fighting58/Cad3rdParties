@@ -69,7 +69,7 @@
                    (list (car p3) (cadr p3) 0.0)
                    (list (car p4) (cadr p4) 0.0)
                    nil))
-  (if ip
+  (if (and ip (listp ip) (< (abs (car ip)) 1e10) (< (abs (cadr ip)) 1e10))
     (list (car ip) (cadr ip))
     nil
   )
@@ -94,110 +94,195 @@
 
 (defun fn:adjust-area-move (pts-list idx1 idx2 target-area /
                             pts n i p1 p2 p-prev p-next seg-len offset-dist
-                            v-inward new-seg-pts sub-pts iter current-area
-                            idx-prev idx-next d-val p1-adj p-last p-last-1 p2-adj
-                            final-seg head tail changed cnt-a seg-a seg-b)
-  (setq iter 0 current-area (util:get-signed-area pts-list) n (length pts-list) changed nil)
+                            v-inward iter current-area
+                            idx-prev idx-next d-val
+                            final-seg head tail changed cnt-a seg-a seg-b
+                            offset-lines p1-off p2-off line-prev line-first line-last line-next p-new j L1 L2
+                            total-offset continue)
+  (setq iter 0 current-area (util:get-signed-area pts-list) n (length pts-list) changed nil total-offset 0.0)
   (while (and (< iter 30) (> (abs (- target-area current-area)) 0.01))
     (setq seg-len 0.0 i idx1)
     (setq continue T)
     (while continue
       (setq p1 (nth i pts-list) p2 (nth (rem (1+ i) n) pts-list))
       (setq seg-len (+ seg-len (distance p1 p2)))
-      (if (= i idx2) (setq continue nil) (setq i (rem (1+ i) n)))
+      (if (= (rem (1+ i) n) idx2) (setq continue nil) (setq i (rem (1+ i) n)))
     )
 
     (setq offset-dist (/ (- target-area current-area) seg-len -1.0))
+    (setq total-offset (- total-offset offset-dist))
     (setq idx-prev (if (= idx1 0) (1- n) (1- idx1)) idx-next (rem (1+ idx2) n))
     (setq p-prev (nth idx-prev pts-list) p-next (nth idx-next pts-list))
 
-    (setq new-seg-pts nil i idx1)
+    (setq offset-lines nil i idx1)
     (setq continue T)
     (while continue
       (setq p1 (nth i pts-list) p2 (nth (rem (1+ i) n) pts-list) d-val (max 1e-9 (distance p1 p2)))
       (setq v-inward (list (/ (- (cadr p2) (cadr p1)) d-val) (/ (- (car p1) (car p2)) d-val)))
-      (setq new-seg-pts (append new-seg-pts (list (list (+ (car p1) (* offset-dist (car v-inward))) (+ (cadr p1) (* offset-dist (cadr v-inward)))))))
-      (if (= i idx2) (setq continue nil) (setq i (rem (1+ i) n)))
+      (setq p1-off (list (+ (car p1) (* offset-dist (car v-inward))) (+ (cadr p1) (* offset-dist (cadr v-inward)))))
+      (setq p2-off (list (+ (car p2) (* offset-dist (car v-inward))) (+ (cadr p2) (* offset-dist (cadr v-inward)))))
+      (setq offset-lines (append offset-lines (list (list p1-off p2-off))))
+      (if (= (rem (1+ i) n) idx2) (setq continue nil) (setq i (rem (1+ i) n)))
     )
 
+    (setq final-seg nil)
+    
+    (setq line-prev (list p-prev (nth idx1 pts-list)))
+    (setq line-first (car offset-lines))
+    (setq p-new (util:intersect-lines (car line-prev) (cadr line-prev) (car line-first) (cadr line-first)))
+    (if (not p-new) (setq p-new (car line-first)))
+    (setq final-seg (append final-seg (list p-new)))
 
-    (setq p-last   (nth (1- (length new-seg-pts)) new-seg-pts)
-          p-last-1 (nth (- (length new-seg-pts) 2) new-seg-pts))
-
-    (if (and (util:point2d-p (car new-seg-pts))
-             (util:point2d-p (cadr new-seg-pts))
-             (util:point2d-p p-last)
-             (util:point2d-p p-last-1))
-      (setq p1-adj (util:intersect-lines p-prev (nth idx1 pts-list) (car new-seg-pts) (cadr new-seg-pts))
-            p2-adj (util:intersect-lines (nth idx2 pts-list) p-next p-last p-last-1))
-      (setq p1-adj nil p2-adj nil)
+    (setq j 0)
+    (while (< j (1- (length offset-lines)))
+      (setq L1 (nth j offset-lines) L2 (nth (1+ j) offset-lines))
+      (setq p-new (util:intersect-lines (car L1) (cadr L1) (car L2) (cadr L2)))
+      (if (not p-new) (setq p-new (cadr L1)))
+      (setq final-seg (append final-seg (list p-new)))
+      (setq j (1+ j))
     )
 
-    (if (and p1-adj p2-adj)
+    (setq line-next (list (nth idx2 pts-list) p-next))
+    (setq line-last (nth (1- (length offset-lines)) offset-lines))
+    (setq p-new (util:intersect-lines (car line-last) (cadr line-last) (car line-next) (cadr line-next)))
+    (if (not p-new) (setq p-new (cadr line-last)))
+    (setq final-seg (append final-seg (list p-new)))
+
+    ;; clockwise 구간 치환: idx1->idx2가 래핑되는 경우를 분리 처리
+    (if (<= idx1 idx2)
       (progn
-        (setq sub-pts (cdr (reverse (cdr (reverse new-seg-pts))))
-              final-seg (append (list p1-adj) sub-pts (list p2-adj)))
-
-        ;; clockwise 구간 치환: idx1->idx2가 래핑되는 경우를 분리 처리
-        (if (<= idx1 idx2)
-          (progn
-            (setq head nil i 0)
-            (while (< i idx1) (setq head (append head (list (nth i pts-list)))) (setq i (1+ i)))
-            (setq tail nil i (1+ idx2))
-            (while (< i n) (setq tail (append tail (list (nth i pts-list)))) (setq i (1+ i)))
-            (setq pts-list (append head final-seg tail) changed T)
-          )
-          (progn
-            ;; 래핑 구간은 final-seg를 [idx1..n-1], [0..idx2]로 분리 후 원래 0번 시작 순서로 재조립
-            (setq cnt-a (- n idx1)
-                  seg-a (vl-subseq-custom final-seg 0 cnt-a)
-                  seg-b (vl-subseq-custom final-seg cnt-a (length final-seg)))
-            (setq tail nil i (1+ idx2))
-            (while (< i idx1) (setq tail (append tail (list (nth i pts-list)))) (setq i (1+ i)))
-            (setq pts-list (append seg-b tail seg-a) changed T)
-          )
-        )
+        (setq head nil i 0)
+        (while (< i idx1) (setq head (append head (list (nth i pts-list)))) (setq i (1+ i)))
+        (setq tail nil i (1+ idx2))
+        (while (< i n) (setq tail (append tail (list (nth i pts-list)))) (setq i (1+ i)))
+        (setq pts-list (append head final-seg tail) changed T)
+      )
+      (progn
+        ;; 래핑 구간은 final-seg를 [idx1..n-1], [0..idx2]로 분리 후 원래 0번 시작 순서로 재조립
+        (setq cnt-a (- n idx1)
+              seg-a (vl-subseq-custom final-seg 0 cnt-a)
+              seg-b (vl-subseq-custom final-seg cnt-a (length final-seg)))
+        (setq tail nil i (1+ idx2))
+        (while (< i idx1) (setq tail (append tail (list (nth i pts-list)))) (setq i (1+ i)))
+        (setq pts-list (append seg-b tail seg-a) changed T)
       )
     )
 
     (setq current-area (util:get-signed-area pts-list) iter (1+ iter))
   )
-  (if changed pts-list nil)
+  (if changed 
+    (list pts-list total-offset)
+    nil
+  )
 )
 
 ;; ==========================================
 ;; [2-B] 엔진 2: 고정점 방식 (P1, P2 유지)
 ;; ==========================================
 
-(defun fn:adjust-area-fixed (pts-list idx1 idx2 target-area /
-                             pts n i p-chord1 p-chord2 chord-len v-inward offset-dist
-                             new-list current-area iter mid-pt head tail p)
-  (setq n (length pts-list) iter 0 current-area (util:get-signed-area pts-list))
+(defun fn:adjust-area-fixed (orig-pts-list idx1 idx2 target-area /
+                             n i current-area iter changed
+                             sub-pts sub-len offset-dist offset-lines
+                             v-inward d-val p1 p2 p1-off p2-off j L1 L2 p-new
+                             final-seg head tail total-offset geom-offset
+                             pts-list base-pts-list new-pts-list mid-pt cnt-a seg-a seg-b p-chord1 p-chord2 continue)
+  (setq n (length orig-pts-list) iter 0 
+        current-area (util:get-signed-area orig-pts-list)
+        total-offset 0.0 geom-offset 0.0 changed nil)
+  
+  (setq pts-list orig-pts-list)
+
+  ;; 1. 정점이 없으면 중간점 생성
   (if (= (rem (1+ idx1) n) idx2)
     (progn
       (setq p-chord1 (nth idx1 pts-list) p-chord2 (nth idx2 pts-list)
-            mid-pt (list (* 0.5 (+ (car p-chord1) (car p-chord2))) (* 0.5 (+ (cadr p-chord1) (cadr p-chord2))))
-            head (vl-subseq-custom pts-list 0 (1+ idx1))
-            tail (vl-subseq-custom pts-list (1+ idx1) n)
-            pts-list (append head (list mid-pt) tail)
-            n (1+ n) idx2 (1+ idx2))
-    )
-  )
-  (setq p-chord1 (nth idx1 pts-list) p-chord2 (nth idx2 pts-list) chord-len (max 1e-9 (distance p-chord1 p-chord2)))
-  (setq v-inward (list (/ (- (cadr p-chord2) (cadr p-chord1)) chord-len) (/ (- (car p-chord1) (car p-chord2)) chord-len)))
-  (while (and (< iter 30) (> (abs (- target-area current-area)) 0.01))
-    (setq offset-dist (/ (- target-area current-area) (* 0.5 chord-len) -1.0)
-          new-list nil i 0)
-    (while (< i n)
-      (setq p (nth i pts-list))
-      (if (util:is-between-indices i idx1 idx2 n)
-        (setq p (list (+ (car p) (* offset-dist (car v-inward))) (+ (cadr p) (* offset-dist (cadr v-inward)))))
+            mid-pt (list (* 0.5 (+ (car p-chord1) (car p-chord2))) (* 0.5 (+ (cadr p-chord1) (cadr p-chord2)))))
+      (if (< idx1 idx2)
+        (progn
+          (setq head (vl-subseq-custom pts-list 0 (1+ idx1))
+                tail (vl-subseq-custom pts-list (1+ idx1) n)
+                pts-list (append head (list mid-pt) tail)
+                idx2 (1+ idx2))
+        )
+        (progn
+          (setq pts-list (append pts-list (list mid-pt)))
+        )
       )
-      (setq new-list (cons p new-list) i (1+ i))
+      (setq n (1+ n) changed T)
     )
-    (setq pts-list (reverse new-list) current-area (util:get-signed-area pts-list) iter (1+ iter))
   )
-  pts-list
+
+  (setq base-pts-list pts-list new-pts-list pts-list)
+
+  (while (and (< iter 50) (> (abs (- target-area current-area)) 0.001))
+    ;; 2. P1 ~ P2 구간의 점들(sub-pts)과 총 길이(sub-len) 추출
+    (setq sub-pts nil sub-len 0.0 i idx1 continue T)
+    (while continue
+      (setq p1 (nth i base-pts-list))
+      (setq sub-pts (append sub-pts (list p1)))
+      (if (= i idx2)
+        (setq continue nil)
+        (progn
+          (setq p2 (nth (rem (1+ i) n) base-pts-list))
+          (setq sub-len (+ sub-len (distance p1 p2)))
+          (setq i (rem (1+ i) n))
+        )
+      )
+    )
+    
+    (setq offset-dist (/ (- target-area current-area) sub-len -1.0))
+    (setq geom-offset (+ geom-offset offset-dist))
+    (setq total-offset (- 0.0 geom-offset))
+    (setq changed T)
+
+    ;; 3. sub-pts를 기반으로 오프셋 선분들 생성
+    (setq offset-lines nil j 0)
+    (while (< j (1- (length sub-pts)))
+      (setq p1 (nth j sub-pts) p2 (nth (1+ j) sub-pts) d-val (max 1e-9 (distance p1 p2)))
+      (setq v-inward (list (/ (- (cadr p2) (cadr p1)) d-val) (/ (- (car p1) (car p2)) d-val)))
+      (setq p1-off (list (+ (car p1) (* geom-offset (car v-inward))) (+ (cadr p1) (* geom-offset (cadr v-inward)))))
+      (setq p2-off (list (+ (car p2) (* geom-offset (car v-inward))) (+ (cadr p2) (* geom-offset (cadr v-inward)))))
+      (setq offset-lines (append offset-lines (list (list p1-off p2-off))))
+      (setq j (1+ j))
+    )
+
+    ;; 4. 교차점을 통해 내부 정점들(final-seg) 계산 (양 끝점 P1, P2 제외)
+    (setq final-seg nil j 0)
+    (while (< j (1- (length offset-lines)))
+      (setq L1 (nth j offset-lines) L2 (nth (1+ j) offset-lines))
+      (setq p-new (util:intersect-lines (car L1) (cadr L1) (car L2) (cadr L2)))
+      (if (not p-new) (setq p-new (cadr L1)))
+      (setq final-seg (append final-seg (list p-new)))
+      (setq j (1+ j))
+    )
+
+    ;; 5. 원본 리스트 업데이트: idx1 ~ idx2 사이를 final-seg로 교체
+    (if (<= idx1 idx2)
+      (progn
+        (setq head nil i 0)
+        (while (<= i idx1) (setq head (append head (list (nth i base-pts-list)))) (setq i (1+ i)))
+        (setq tail nil i idx2)
+        (while (< i n) (setq tail (append tail (list (nth i base-pts-list)))) (setq i (1+ i)))
+        (setq new-pts-list (append head final-seg tail))
+      )
+      (progn
+        (setq cnt-a (- n idx1 1)
+              seg-a (vl-subseq-custom final-seg 0 cnt-a)
+              seg-b (vl-subseq-custom final-seg cnt-a (length final-seg)))
+        
+        (setq tail nil i idx2)
+        (while (<= i idx1) (setq tail (append tail (list (nth i base-pts-list)))) (setq i (1+ i)))
+        (setq new-pts-list (append seg-b tail seg-a))
+      )
+    )
+
+    (setq current-area (util:get-signed-area new-pts-list) iter (1+ iter))
+  )
+
+  (if changed 
+    (list new-pts-list total-offset)
+    nil
+  )
 )
 
 (defun vl-subseq-custom (lst start end / res i)
@@ -246,7 +331,8 @@
                             ent pts current-area
                             target-input target-area
                             p1 p2 idx1 idx2
-                            new-pts flat-pts vla-orig vla-ref final-area)
+                            new-pts flat-pts vla-orig vla-ref final-area
+                            engine-res total-offset)
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
   (setq old-osmode (getvar "OSMODE"))
 
@@ -277,7 +363,7 @@
             current-area (util:get-signed-area pts))
       (princ (strcat "\n현재 면적: " (rtos current-area 2 2)))
 
-      (setq target-input (getstring T "\n목표 면적 입력 (예: 123, @100, #200, d10, t150): ")
+      (setq target-input (getstring "\n목표 면적 입력 (예: 123, @100, #200, d10, t150): ")
             target-area (util:parse-target current-area target-input))
       (if (not target-area)
         (progn
@@ -308,8 +394,11 @@
       (if ok
         (progn
           (princ "\n연산 중...")
-          (setq new-pts (apply engine-fn (list pts idx1 idx2 target-area)))
-
+          (setq engine-res (apply engine-fn (list pts idx1 idx2 target-area)))
+          (if engine-res
+            (setq new-pts (car engine-res) total-offset (cadr engine-res))
+            (setq new-pts nil)
+          )
 
           (if (not new-pts)
             (princ "\n오류: 선택 구간의 교차점 계산에 실패했습니다. P1/P2를 인접 모서리가 분명한 꼭지점으로 다시 선택하세요.")
@@ -335,9 +424,10 @@
 
                 (setq final-area (util:get-signed-area new-pts))
                 (if (<= (abs (- target-area final-area)) 0.01)
-                  (princ (strcat "\n[완료] 녹색 ref_object 생성. 면적: " (rtos final-area 2 2)))
-                  (princ (strcat "\n[중단] 30회 초과. 녹색 ref_object 생성. 면적: "
+                  (princ (strcat "\n[완료] 수정면적: " (rtos final-area 2 2) ", 이동량: " (rtos total-offset 2 4)))
+                  (princ (strcat "\n[중단] 30회 초과. 수정면적: "
                                  (rtos final-area 2 2)
+                                 ", 이동량: " (rtos total-offset 2 4)
                                  " (오차: "
                                  (rtos (abs (- target-area final-area)) 2 4)
                                  ")"))
